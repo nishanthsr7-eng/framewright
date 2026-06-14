@@ -1,0 +1,175 @@
+{
+  "mcpServers": {
+    "audio-analyzer-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/analysis/audio_analyzer",
+        "run",
+        "audio-analyzer-mcp"
+      ]
+    },
+    "beat-sync-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/analysis/beat_sync",
+        "run",
+        "beat-sync-mcp"
+      ]
+    },
+    "highlight-reel-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/analysis/highlight_reel",
+        "run",
+        "highlight-reel-mcp"
+      ]
+    },
+    "scene-detector-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/analysis/scene_detector",
+        "run",
+        "scene-detector-mcp"
+      ]
+    },
+    "chroma-key-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/assets/chroma_key",
+        "run",
+        "chroma-key-mcp"
+      ]
+    },
+    "frame-extractor-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/assets/frame_extractor",
+        "run",
+        "frame-extractor-mcp"
+      ]
+    },
+    "subject-extractor-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/assets/subject_extractor",
+        "run",
+        "subject-extractor-mcp"
+      ]
+    },
+    "text-overlay-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/assets/text_overlay",
+        "run",
+        "text-overlay-mcp"
+      ]
+    },
+    "audio-mastering-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/render/audio_mastering",
+        "run",
+        "audio-mastering-mcp"
+      ]
+    },
+    "color-match-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/render/color_match",
+        "run",
+        "color-match-mcp"
+      ]
+    },
+    "compositor-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/render/compositor",
+        "run",
+        "compositor-mcp"
+      ]
+    },
+    "effects-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/render/effects",
+        "run",
+        "effects-mcp"
+      ]
+    },
+    "export-presets-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/render/export_presets",
+        "run",
+        "export-presets-mcp"
+      ]
+    },
+    "ken-burns-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/render/ken_burns",
+        "run",
+        "ken-burns-mcp"
+      ]
+    },
+    "lut-grading-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/render/lut_grading",
+        "run",
+        "lut-grading-mcp"
+      ]
+    },
+    "overlay-fx-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/render/overlay_fx",
+        "run",
+        "overlay-fx-mcp"
+      ]
+    },
+    "speed-ramp-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/render/speed_ramp",
+        "run",
+        "speed-ramp-mcp"
+      ]
+    },
+    "stabilization-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/render/stabilization",
+        "run",
+        "stabilization-mcp"
+      ]
+    },
+    "timeline-project-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "servers/render/timeline_project",
+        "run",
+        "timeline-project-mcp"
+      ]
+    }
+  }
+}

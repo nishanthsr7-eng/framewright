@@ -1,0 +1,30 @@
+# Media and generated files
+input/
+output/
+models/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Local config and notes
+.mcp.json
+.claude/
+CLAUDE.md
+*.local.md
+*.log
+
+# DaVinci Resolve
+*.drp
+vidt.trf
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
