@@ -1,0 +1,26 @@
+[project]
+name = "audio-analyzer-mcp"
+version = "0.1.0"
+description = "分析音频/视频中的节奏(BPM/节拍)、转录文字、冲击/瞬态时刻以及频谱等特征"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.6.0",
+    "librosa>=0.10.1,<0.11",
+    "faster-whisper>=1.0.0,<2.0",
+    "numpy>=1.23,<2.0",
+    "soundfile>=0.12.1",
+    "onnxruntime>=1.17.0,<1.20"
+]
+
+[tool.poetry]
+packages = [
+    {include = "audio_analyzer_mcp", from = "src"},
+]
+
+[project.scripts]
+audio-analyzer-mcp = "audio_analyzer_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
