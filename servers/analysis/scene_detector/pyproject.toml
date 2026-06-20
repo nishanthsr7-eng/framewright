@@ -1,0 +1,22 @@
+[project]
+name = "scene-detector-mcp"
+version = "0.1.0"
+description = "使用 PySceneDetect 检测视频中的镜头/场景切换点，并可将视频按镜头拆分为多个片段"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.6.0",
+    "scenedetect>=0.6.4"
+]
+
+[tool.poetry]
+packages = [
+    {include = "scene_detector_mcp", from = "src"},
+]
+
+[project.scripts]
+scene-detector-mcp = "scene_detector_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
