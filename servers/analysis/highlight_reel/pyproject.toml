@@ -1,0 +1,22 @@
+[project]
+name = "highlight-reel-mcp"
+version = "0.1.0"
+description = "基于音频能量/冲击强度自动挑选视频中最精彩的片段，拼接生成集锦/预告片"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.6.0",
+    "librosa>=0.10.1,<0.11",
+    "numpy>=1.23,<2.0",
+    "soundfile>=0.12.1"
+]
+
+[tool.poetry]
+packages = [{include = "highlight_reel_mcp", from = "src"}]
+
+[project.scripts]
+highlight-reel-mcp = "highlight_reel_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,17 @@
+[project]
+name = "beat-sync-mcp"
+version = "0.1.0"
+description = "检测音乐节拍并自动将多个视频片段按节拍剪切拼接成卡点视频"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mcp[cli]>=1.6.0", "librosa>=0.10.1,<0.11", "numpy>=1.23,<2.0", "soundfile>=0.12.1"]
+
+[tool.poetry]
+packages = [{include = "beat_sync_mcp", from = "src"}]
+
+[project.scripts]
+beat-sync-mcp = "beat_sync_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
