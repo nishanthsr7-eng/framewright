@@ -1,0 +1,17 @@
+[project]
+name = "chroma-key-mcp"
+version = "0.1.0"
+description = "绿幕/蓝幕抠像与背景替换"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mcp[cli]>=1.6.0"]
+
+[tool.poetry]
+packages = [{include = "chroma_key_mcp", from = "src"}]
+
+[project.scripts]
+chroma-key-mcp = "chroma_key_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
