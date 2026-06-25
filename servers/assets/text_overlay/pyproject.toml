@@ -1,0 +1,22 @@
+[project]
+name = "text-overlay-mcp"
+version = "0.1.0"
+description = "为视频添加 \"edit\" 风格的文字特效（粗体字体、渐变/描边/阴影、逐词动画），支持透明叠加层和已合成视频两种输出"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.6.0",
+    "pillow>=10.0.0"
+]
+
+[tool.poetry]
+packages = [
+    {include = "text_overlay_mcp", from = "src"},
+]
+
+[project.scripts]
+text-overlay-mcp = "text_overlay_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
