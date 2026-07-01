@@ -1,0 +1,17 @@
+[project]
+name = "compositor-mcp"
+version = "0.1.0"
+description = "使用 ffmpeg filter_complex 将多个视频/图片/透明叠加层(角色抠图、文字、画中画视频等)按位置、时间区间和层级顺序合成到一个视频上"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mcp[cli]>=1.6.0"]
+
+[tool.poetry]
+packages = [{include = "compositor_mcp", from = "src"}]
+
+[project.scripts]
+compositor-mcp = "compositor_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

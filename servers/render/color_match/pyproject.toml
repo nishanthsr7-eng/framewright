@@ -1,0 +1,21 @@
+[project]
+name = "color-match-mcp"
+version = "0.1.0"
+description = "通过采样帧的颜色统计(均值/标准差)分析视频色彩风格，并将一个视频的色彩匹配到另一个视频/参考图"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.6.0",
+    "numpy>=1.24",
+    "Pillow>=10.0",
+]
+
+[tool.poetry]
+packages = [{include = "color_match_mcp", from = "src"}]
+
+[project.scripts]
+color-match-mcp = "color_match_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
