@@ -1,0 +1,18 @@
+[project]
+name = "overlay-fx-mcp"
+version = "0.1.0"
+description = "胶片颗粒、暗角、色差、光晕(light leak)等电影感叠加特效"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mcp[cli]>=1.6.0"]
+
+[tool.poetry]
+packages = [{include = "overlay_fx_mcp", from = "src"}]
+include = ["src/overlay_fx_mcp/assets/*.png"]
+
+[project.scripts]
+overlay-fx-mcp = "overlay_fx_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
