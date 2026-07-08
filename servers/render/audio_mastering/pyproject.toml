@@ -1,0 +1,17 @@
+[project]
+name = "audio-mastering-mcp"
+version = "0.1.0"
+description = "音频后期处理: 响度归一化(loudnorm)、降噪(afftdn)、背景音乐混音与自动闪避(sidechain ducking)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mcp[cli]>=1.6.0"]
+
+[tool.poetry]
+packages = [{include = "audio_mastering_mcp", from = "src"}]
+
+[project.scripts]
+audio-mastering-mcp = "audio_mastering_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

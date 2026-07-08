@@ -1,0 +1,17 @@
+[project]
+name = "export-presets-mcp"
+version = "0.1.0"
+description = "按各社交平台(YouTube/TikTok/Instagram/Twitter等)的推荐分辨率、码率和宽高比一键导出视频"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mcp[cli]>=1.6.0"]
+
+[tool.poetry]
+packages = [{include = "export_presets_mcp", from = "src"}]
+
+[project.scripts]
+export-presets-mcp = "export_presets_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
