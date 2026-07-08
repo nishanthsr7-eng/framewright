@@ -1,0 +1,17 @@
+[project]
+name = "stabilization-mcp"
+version = "0.1.0"
+description = "使用 vidstab 对手持/抖动视频进行两遍稳像处理"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mcp[cli]>=1.6.0"]
+
+[tool.poetry]
+packages = [{include = "stabilization_mcp", from = "src"}]
+
+[project.scripts]
+stabilization-mcp = "stabilization_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

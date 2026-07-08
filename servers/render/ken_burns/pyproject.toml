@@ -1,0 +1,17 @@
+[project]
+name = "ken-burns-mcp"
+version = "0.1.0"
+description = "为静态图片生成 Ken Burns 缓慢缩放/平移动态效果视频"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mcp[cli]>=1.6.0"]
+
+[tool.poetry]
+packages = [{include = "ken_burns_mcp", from = "src"}]
+
+[project.scripts]
+ken-burns-mcp = "ken_burns_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
