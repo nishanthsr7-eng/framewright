@@ -1,0 +1,17 @@
+[project]
+name = "timeline-project-mcp"
+version = "0.1.0"
+description = "维护一个 JSON 格式的剪辑项目(多个片段+转场+多层叠加)，并一次性渲染为最终视频"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mcp[cli]>=1.6.0"]
+
+[tool.poetry]
+packages = [{include = "timeline_project_mcp", from = "src"}]
+
+[project.scripts]
+timeline-project-mcp = "timeline_project_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
