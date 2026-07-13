@@ -1,0 +1,25 @@
+{
+	Tools = ordered() {
+		SubtitleText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Subtitle text here", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Regular", },
+				Size = Input { Value = 0.05, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.07 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "SubtitleText", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

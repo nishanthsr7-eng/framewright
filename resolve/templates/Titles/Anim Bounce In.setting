@@ -1,0 +1,38 @@
+{
+	Tools = ordered() {
+		TitleText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "BOUNCE!", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Black", },
+				Size = Input {
+					SourceOp = "BounceSize",
+					Source = "Value",
+				},
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		BounceSize = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.0,   },
+				[14] = { 0.115, },
+				[20] = { 0.082, },
+				[25] = { 0.105, },
+				[29] = { 0.093, },
+				[33] = { 0.1,   },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "TitleText", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

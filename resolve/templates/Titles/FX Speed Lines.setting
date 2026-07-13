@@ -1,0 +1,57 @@
+{
+	Tools = ordered() {
+		SpeedBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 1, },
+				TopLeftGreen = Input { Value = 1, },
+				TopLeftBlue  = Input { Value = 1, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+		},
+		LineNoise = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 1, },
+				YScale     = Input { Value = 40, },
+				Contrast   = Input { Value = 8, },
+				Brightness = Input { Value = -0.2, },
+				Seethe     = Input { Value = 0, },
+			},
+		},
+		LinePolar = Transform {
+			Inputs = {
+				Input  = Input { SourceOp = "LineNoise", Source = "Output", },
+				Center = Input { Value = { 0.5, 0.5 }, },
+			},
+		},
+		LineFade = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.0, Flags = { Linear = true }, },
+				[6]  = { 0.9, Flags = { Linear = true }, },
+				[12] = { 0.0, },
+			},
+		},
+		LineColor = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "LinePolar", Source = "Output", },
+				MasterRGBGain = Input { Value = 0, },
+			},
+		},
+		LineMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SpeedBg",    Source = "Output", },
+				Foreground = Input { SourceOp = "LineColor",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { SourceOp = "LineFade", Source = "Value", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "LineMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

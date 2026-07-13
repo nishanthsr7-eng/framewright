@@ -1,0 +1,90 @@
+{
+	Tools = ordered() {
+		SpaceBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0.0, },
+				TopLeftGreen = Input { Value = 0.0, },
+				TopLeftBlue  = Input { Value = 0.02, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		Stars1 = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 0.08, },
+				YScale     = Input { Value = 0.08, },
+				Contrast   = Input { Value = 14, },
+				Brightness = Input { Value = -0.48, },
+				Seethe     = Input { Value = 0.0, },
+				SeetheRate = Input { Value = 0.0, },
+			},
+		},
+		Stars2 = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 0.12, },
+				YScale     = Input { Value = 0.12, },
+				Contrast   = Input { Value = 18, },
+				Brightness = Input { Value = -0.49, },
+				Seethe     = Input { Value = 0.1, },
+				SeetheRate = Input { Value = 0.02, },
+			},
+		},
+		Stars3 = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 0.05, },
+				YScale     = Input { Value = 0.05, },
+				Contrast   = Input { Value = 20, },
+				Brightness = Input { Value = -0.499, },
+				Seethe     = Input { Value = 0.05, },
+				SeetheRate = Input { Value = 0.01, },
+			},
+		},
+		StarPan = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "Stars1", Source = "Output", },
+				XOffset = Input { SourceOp = "PanSpline", Source = "Value", },
+			},
+		},
+		PanSpline = BezierSpline {
+			KeyFrames = {
+				[0]   = { 0.0,  Flags = { Linear = true }, },
+				[300] = { 0.08, Flags = { Linear = true }, },
+			},
+		},
+		Merge1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SpaceBg",  Source = "Output", },
+				Foreground = Input { SourceOp = "StarPan",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		Merge2 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Merge1",  Source = "Output", },
+				Foreground = Input { SourceOp = "Stars2",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.7, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		Merge3 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Merge2",  Source = "Output", },
+				Foreground = Input { SourceOp = "Stars3",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.5, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "Merge3", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,75 @@
+{
+	Tools = ordered() {
+		NameText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Your Name", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.065, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor = Input { Value = 0, },
+				Center = Input {
+					SourceOp = "NamePath",
+					Source = "Value",
+				},
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		NamePath = Path {
+			Points = {
+				[0]  = { 0.06, -0.05, },
+				[22] = { 0.06,  0.22, },
+			},
+		},
+		RoleText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Title / Position", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Regular", },
+				Size = Input { Value = 0.042, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor = Input { Value = 0, },
+				Center = Input {
+					SourceOp = "RolePath",
+					Source = "Value",
+				},
+				Red1 = Input { Value = 0.65, },
+				Green1 = Input { Value = 0.82, },
+				Blue1 = Input { Value = 1, },
+				Alpha1 = Input {
+					SourceOp = "RoleAlpha",
+					Source = "Value",
+				},
+			},
+		},
+		RolePath = Path {
+			Points = {
+				[0]  = { 0.06, -0.05, },
+				[28] = { 0.06,  0.14, },
+			},
+		},
+		RoleAlpha = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0, },
+				[28] = { 1, },
+			},
+		},
+		Merge1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "RoleText", Source = "Output", },
+				Foreground = Input { SourceOp = "NameText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "Merge1", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

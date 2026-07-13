@@ -1,0 +1,72 @@
+{
+	Tools = ordered() {
+		Box = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Type = Input { Value = 0, },
+				TopLeftRed   = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue  = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 0.75, },
+			},
+		},
+		BoxTransform = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "Box", Source = "Output", },
+				Center = Input { Value = { 0.5, 0.15 }, },
+				Size   = Input { Value = 1, },
+				Aspect = Input { Value = 4.5, },
+			},
+		},
+		FollowText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Follow for more!", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.042, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.17 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		HandleText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "@YourHandle", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Regular", },
+				Size = Input { Value = 0.035, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.105 }, },
+				Red1 = Input { Value = 0.4,  },
+				Green1 = Input { Value = 0.75, },
+				Blue1 = Input { Value = 1,   },
+			},
+		},
+		M1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "BoxTransform", Source = "Output", },
+				Foreground = Input { SourceOp = "FollowText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		M2 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "M1", Source = "Output", },
+				Foreground = Input { SourceOp = "HandleText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "M2", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,91 @@
+{
+	Tools = ordered() {
+		TrackBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0.15, },
+				TopLeftGreen = Input { Value = 0.15, },
+				TopLeftBlue  = Input { Value = 0.15, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		TrackMask = RectangleMask {
+			Inputs = {
+				Width    = Input { Value = 0.7, },
+				Height   = Input { Value = 0.04, },
+				SoftEdge = Input { Value = 0.0, },
+				Center   = Input { Value = { 0.5, 0.12 }, },
+			},
+		},
+		TrackLayer = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TrackBg",   Source = "Output", },
+				Foreground = Input { SourceOp = "TrackBg",   Source = "Output", },
+				Mask       = Input { SourceOp = "TrackMask", Source = "Mask", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		FillBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0.1, },
+				TopLeftGreen = Input { Value = 0.7, },
+				TopLeftBlue  = Input { Value = 1.0, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		FillMove = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "FillBg", Source = "Output", },
+				XOffset = Input { SourceOp = "FillSpline", Source = "Value", },
+			},
+		},
+		FillSpline = BezierSpline {
+			KeyFrames = {
+				[0]   = { -0.35, Flags = { Linear = true }, },
+				[150] = { 0.0,   Flags = { Linear = true }, },
+			},
+		},
+		FillMask = RectangleMask {
+			Inputs = {
+				Width    = Input { Value = 0.7, },
+				Height   = Input { Value = 0.04, },
+				SoftEdge = Input { Value = 0.0, },
+				Center   = Input { Value = { 0.5, 0.12 }, },
+			},
+		},
+		FillLayer = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TrackLayer", Source = "Output", },
+				Foreground = Input { SourceOp = "FillMove",   Source = "Output", },
+				Mask       = Input { SourceOp = "FillMask",   Source = "Mask", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		LabelText = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "Loading...", },
+				Font  = Input { Value = "Arial", },
+				Style = Input { Value = "Regular", },
+				Size  = Input { Value = 0.04, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor   = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.18 }, },
+				Red1 = Input { Value = 1, }, Green1 = Input { Value = 1, }, Blue1 = Input { Value = 1, },
+			},
+		},
+		MergeLabel = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "FillLayer", Source = "Output", },
+				Foreground = Input { SourceOp = "LabelText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeLabel", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

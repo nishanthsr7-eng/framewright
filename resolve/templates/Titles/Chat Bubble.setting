@@ -1,0 +1,97 @@
+{
+	Tools = ordered() {
+		BubbleBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0.13, },
+				TopLeftGreen = Input { Value = 0.59, },
+				TopLeftBlue  = Input { Value = 0.95, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		BubbleMask = RectangleMask {
+			Inputs = {
+				Width    = Input { Value = 0.42, },
+				Height   = Input { Value = 0.1, },
+				SoftEdge = Input { Value = 0.025, },
+				Center   = Input { Value = { 0.38, 0.3 }, },
+			},
+		},
+		BubbleShape = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "BubbleBg",   Source = "Output", },
+				Foreground = Input { SourceOp = "BubbleBg",   Source = "Output", },
+				Mask       = Input { SourceOp = "BubbleMask", Source = "Mask", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		BubbleText = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "Type your message here!", },
+				Font  = Input { Value = "Arial", },
+				Style = Input { Value = "Regular", },
+				Size  = Input { Value = 0.038, },
+				HorizontalAnchor = Input { Value = -1, },
+				VerticalAnchor   = Input { Value = 0, },
+				Center = Input { Value = { 0.18, 0.3 }, },
+				Red1   = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1  = Input { Value = 1, },
+			},
+		},
+		SenderText = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "Username", },
+				Font  = Input { Value = "Arial", },
+				Style = Input { Value = "Bold", },
+				Size  = Input { Value = 0.032, },
+				HorizontalAnchor = Input { Value = -1, },
+				VerticalAnchor   = Input { Value = 0, },
+				Center = Input { Value = { 0.18, 0.38 }, },
+				Red1   = Input { Value = 0.8, },
+				Green1 = Input { Value = 0.9, },
+				Blue1  = Input { Value = 1.0, },
+			},
+		},
+		Transparent = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+		},
+		BubbleAlpha = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0, Flags = { Linear = true }, },
+				[8]  = { 1, },
+			},
+		},
+		MergeBubble = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Transparent",  Source = "Output", },
+				Foreground = Input { SourceOp = "BubbleShape",  Source = "Output", },
+				Blend      = Input { SourceOp = "BubbleAlpha",  Source = "Value", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeSender = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeBubble", Source = "Output", },
+				Foreground = Input { SourceOp = "SenderText",  Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeMsg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeSender", Source = "Output", },
+				Foreground = Input { SourceOp = "BubbleText",  Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeMsg", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

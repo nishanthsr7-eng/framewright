@@ -1,0 +1,77 @@
+{
+	Tools = ordered() {
+		ChromeText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "CHROME", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Black", },
+				Size = Input { Value = 0.11, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1 = Input { Value = 0.88, },
+				Green1 = Input { Value = 0.88, },
+				Blue1 = Input { Value = 0.92, },
+			},
+		},
+		BrightShine = Blur {
+			Inputs = {
+				XBlurSize = Input { Value = 6, },
+				Input = Input { SourceOp = "ChromeText", Source = "Output", },
+			},
+		},
+		ShineBoost = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "BrightShine", Source = "Output", },
+				MasterRGBGain = Input { Value = 3.5, },
+			},
+		},
+		DarkReflect = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "ChromeText", Source = "Output", },
+				HighlightsR = Input { Value = -0.15, },
+				HighlightsG = Input { Value = -0.15, },
+				HighlightsB = Input { Value = -0.15, },
+				ShadowsR = Input { Value = -0.4, },
+				ShadowsG = Input { Value = -0.4, },
+				ShadowsB = Input { Value = -0.4, },
+			},
+		},
+		ShadowText = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "ChromeText", Source = "Output", },
+				MasterRGBGain = Input { Value = 0.08, },
+			},
+		},
+		ShiftShadow = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "ShadowText", Source = "Output", },
+				XOffset = Input { Value = 0.005, },
+				YOffset = Input { Value = -0.005, },
+			},
+		},
+		M1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "ShiftShadow", Source = "Output", },
+				Foreground = Input { SourceOp = "DarkReflect", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		M2 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "M1", Source = "Output", },
+				Foreground = Input { SourceOp = "ShineBoost", Source = "Output", },
+				ApplyMode = Input { Value = "Screen", },
+				Blend = Input { Value = 0.5, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "M2", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

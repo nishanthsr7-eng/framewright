@@ -1,0 +1,69 @@
+{
+	Tools = ordered() {
+		MatrixBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue  = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		RainNoise = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 1.5, },
+				YScale     = Input { Value = 20, },
+				Contrast   = Input { Value = 6, },
+				Brightness = Input { Value = -0.1, },
+				Seethe     = Input { Value = 0.8, },
+				SeetheRate = Input { Value = 3.0, },
+			},
+		},
+		GreenTint = ColorCorrector {
+			Inputs = {
+				Input     = Input { SourceOp = "RainNoise", Source = "Output", },
+				GainRed   = Input { Value = 0, },
+				GainGreen = Input { Value = 1.6, },
+				GainBlue  = Input { Value = 0.2, },
+			},
+		},
+		RainBlur = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "GreenTint", Source = "Output", },
+				XBlurSize = Input { Value = 0, },
+				YBlurSize = Input { Value = 2, },
+			},
+		},
+		MergeRain = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MatrixBg", Source = "Output", },
+				Foreground = Input { SourceOp = "RainBlur", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		GlowBlur = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "MergeRain", Source = "Output", },
+				XBlurSize = Input { Value = 3, },
+				YBlurSize = Input { Value = 3, },
+			},
+		},
+		GlowMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeRain", Source = "Output", },
+				Foreground = Input { SourceOp = "GlowBlur",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.4, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "GlowMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

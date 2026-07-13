@@ -1,0 +1,85 @@
+{
+	Tools = ordered() {
+		FrontText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "3D TEXT", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Black", },
+				Size = Input { Value = 0.1, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		Depth1 = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "FrontText", Source = "Output", },
+				MasterRGBGain = Input { Value = 0.55, },
+			},
+		},
+		Shift1 = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "Depth1", Source = "Output", },
+				XOffset = Input { Value = 0.006, },
+				YOffset = Input { Value = -0.006, },
+			},
+		},
+		Depth2 = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "FrontText", Source = "Output", },
+				MasterRGBGain = Input { Value = 0.35, },
+			},
+		},
+		Shift2 = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "Depth2", Source = "Output", },
+				XOffset = Input { Value = 0.012, },
+				YOffset = Input { Value = -0.012, },
+			},
+		},
+		Depth3 = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "FrontText", Source = "Output", },
+				MasterRGBGain = Input { Value = 0.15, },
+			},
+		},
+		Shift3 = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "Depth3", Source = "Output", },
+				XOffset = Input { Value = 0.02, },
+				YOffset = Input { Value = -0.02, },
+			},
+		},
+		MergeBack = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Shift3", Source = "Output", },
+				Foreground = Input { SourceOp = "Shift2", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeMid = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeBack", Source = "Output", },
+				Foreground = Input { SourceOp = "Shift1", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeFront = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeMid", Source = "Output", },
+				Foreground = Input { SourceOp = "FrontText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeFront", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,121 @@
+{
+	Tools = ordered() {
+		TickerBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0.85, },
+				TopLeftGreen = Input { Value = 0.1, },
+				TopLeftBlue  = Input { Value = 0.1, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		TickerMask = RectangleMask {
+			Inputs = {
+				Width    = Input { Value = 2.0, },
+				Height   = Input { Value = 0.072, },
+				SoftEdge = Input { Value = 0, },
+				Center   = Input { Value = { 0.5, 0.07 }, },
+			},
+		},
+		TickerBar = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TickerBg",   Source = "Output", },
+				Foreground = Input { SourceOp = "TickerBg",   Source = "Output", },
+				Mask       = Input { SourceOp = "TickerMask", Source = "Mask", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		TagBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0.1, },
+				TopLeftGreen = Input { Value = 0.1, },
+				TopLeftBlue  = Input { Value = 0.1, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		TagMask = RectangleMask {
+			Inputs = {
+				Width    = Input { Value = 0.14, },
+				Height   = Input { Value = 0.072, },
+				SoftEdge = Input { Value = 0, },
+				Center   = Input { Value = { 0.07, 0.07 }, },
+			},
+		},
+		TagLayer = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TickerBar", Source = "Output", },
+				Foreground = Input { SourceOp = "TagBg",     Source = "Output", },
+				Mask       = Input { SourceOp = "TagMask",   Source = "Mask", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		TagText = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "LIVE", },
+				Font  = Input { Value = "Arial", },
+				Style = Input { Value = "Bold", },
+				Size  = Input { Value = 0.035, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor   = Input { Value = 0, },
+				Center = Input { Value = { 0.07, 0.07 }, },
+				Red1   = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1  = Input { Value = 1, },
+			},
+		},
+		ScrollText = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "Breaking news headline scrolls here  --  Add your text and it will scroll across the screen  --  Edit the StyledText node to change this message  --  ", },
+				Font  = Input { Value = "Arial", },
+				Style = Input { Value = "Regular", },
+				Size  = Input { Value = 0.035, },
+				HorizontalAnchor = Input { Value = -1, },
+				VerticalAnchor   = Input { Value = 0, },
+				Center = Input { SourceOp = "ScrollPath", Source = "Value", },
+				Red1   = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1  = Input { Value = 1, },
+			},
+		},
+		ScrollPath = Path {
+			Points = {
+				[0]   = { 1.5,  0.07, },
+				[240] = { -1.0, 0.07, },
+			},
+		},
+		MergeTag = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TagLayer", Source = "Output", },
+				Foreground = Input { SourceOp = "TagText",  Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeScroll = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeTag",    Source = "Output", },
+				Foreground = Input { SourceOp = "ScrollText",  Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		Transparent = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+		},
+		FinalMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Transparent",  Source = "Output", },
+				Foreground = Input { SourceOp = "MergeScroll",  Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "FinalMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,51 @@
+{
+	Tools = ordered() {
+		TopBar = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Type = Input { Value = 0, },
+				TopLeftRed   = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue  = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		TopCrop = Crop {
+			Inputs = {
+				Input = Input { SourceOp = "TopBar", Source = "Output", },
+				YHigh = Input { Value = 1, },
+				YLow  = Input { Value = 0.8, },
+			},
+		},
+		BotBar = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Type = Input { Value = 0, },
+				TopLeftRed   = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue  = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		BotCrop = Crop {
+			Inputs = {
+				Input = Input { SourceOp = "BotBar", Source = "Output", },
+				YHigh = Input { Value = 0.2, },
+				YLow  = Input { Value = 0, },
+			},
+		},
+		MergeBars = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TopCrop", Source = "Output", },
+				Foreground = Input { SourceOp = "BotCrop", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeBars", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,58 @@
+{
+	Tools = ordered() {
+		TopText = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "TOP TEXT HERE", },
+				Font  = Input { Value = "Impact", },
+				Style = Input { Value = "Regular", },
+				Size  = Input { Value = 0.09, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor   = Input { Value = 1, },
+				Center = Input { Value = { 0.5, 0.93 }, },
+				Red1   = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1  = Input { Value = 1, },
+			},
+		},
+		BottomText = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "BOTTOM TEXT HERE", },
+				Font  = Input { Value = "Impact", },
+				Style = Input { Value = "Regular", },
+				Size  = Input { Value = 0.09, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor   = Input { Value = -1, },
+				Center = Input { Value = { 0.5, 0.08 }, },
+				Red1   = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1  = Input { Value = 1, },
+			},
+		},
+		Transparent = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+		},
+		MergeTop = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Transparent", Source = "Output", },
+				Foreground = Input { SourceOp = "TopText",     Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeBoth = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeTop",   Source = "Output", },
+				Foreground = Input { SourceOp = "BottomText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeBoth", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

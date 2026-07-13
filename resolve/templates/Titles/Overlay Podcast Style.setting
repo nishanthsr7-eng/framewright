@@ -1,0 +1,119 @@
+{
+	Tools = ordered() {
+		AccentBar = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Type = Input { Value = 0, },
+				TopLeftRed   = Input { Value = 0.2, },
+				TopLeftGreen = Input { Value = 0.5, },
+				TopLeftBlue  = Input { Value = 1.0, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		BarXform = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "AccentBar", Source = "Output", },
+				Center = Input { Value = { 0.032, 0.2 }, },
+				Size   = Input { Value = 1, },
+				Aspect = Input { Value = 28, },
+			},
+		},
+		DarkBox = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Type = Input { Value = 0, },
+				TopLeftRed   = Input { Value = 0.05, },
+				TopLeftGreen = Input { Value = 0.05, },
+				TopLeftBlue  = Input { Value = 0.05, },
+				TopLeftAlpha = Input { Value = 0.88, },
+			},
+		},
+		BoxXform = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "DarkBox", Source = "Output", },
+				Center = Input { Value = { 0.23, 0.2 }, },
+				Size   = Input { Value = 1, },
+				Aspect = Input { Value = 4.8, },
+			},
+		},
+		EpLabel = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "EP. 42", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.032, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor = Input { Value = 0, },
+				Center = Input { Value = { 0.065, 0.25 }, },
+				Red1 = Input { Value = 0.4, },
+				Green1 = Input { Value = 0.7, },
+				Blue1 = Input { Value = 1.0, },
+			},
+		},
+		NameLabel = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Guest Name", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.052, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor = Input { Value = 0, },
+				Center = Input { Value = { 0.065, 0.2 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		TopicLabel = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Topic or Job Title", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Regular", },
+				Size = Input { Value = 0.034, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor = Input { Value = 0, },
+				Center = Input { Value = { 0.065, 0.135 }, },
+				Red1 = Input { Value = 0.72, },
+				Green1 = Input { Value = 0.72, },
+				Blue1 = Input { Value = 0.72, },
+			},
+		},
+		M1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "BoxXform", Source = "Output", },
+				Foreground = Input { SourceOp = "BarXform", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		M2 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "M1", Source = "Output", },
+				Foreground = Input { SourceOp = "EpLabel", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		M3 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "M2", Source = "Output", },
+				Foreground = Input { SourceOp = "NameLabel", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		M4 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "M3", Source = "Output", },
+				Foreground = Input { SourceOp = "TopicLabel", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "M4", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

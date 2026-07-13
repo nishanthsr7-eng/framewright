@@ -1,0 +1,87 @@
+{
+	Tools = ordered() {
+		FlareBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 1, },
+				TopLeftGreen = Input { Value = 1, },
+				TopLeftBlue  = Input { Value = 1, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+		},
+		CoreGlow = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 1, },
+				TopLeftGreen = Input { Value = 0.96, },
+				TopLeftBlue  = Input { Value = 0.8, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		CoreMask = EllipseMask {
+			Inputs = {
+				Width    = Input { Value = 0.04, },
+				Height   = Input { Value = 0.04, },
+				SoftEdge = Input { Value = 0.0, },
+				Center   = Input { Value = { 0.5, 0.5 }, },
+			},
+		},
+		CoreApply = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "FlareBg",   Source = "Output", },
+				Foreground = Input { SourceOp = "CoreGlow",  Source = "Output", },
+				Mask       = Input { SourceOp = "CoreMask",  Source = "Mask", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		CoreBlurOut = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "CoreApply", Source = "Output", },
+				XBlurSize = Input { Value = 35, },
+			},
+		},
+		CoreBlurTight = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "CoreApply", Source = "Output", },
+				XBlurSize = Input { Value = 6, },
+			},
+		},
+		GlowCombine = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CoreBlurOut",   Source = "Output", },
+				Foreground = Input { SourceOp = "CoreBlurTight", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		FlareSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.0, Flags = { Linear = true }, },
+				[5]  = { 1.0, Flags = { Linear = true }, },
+				[10] = { 0.4, Flags = { Linear = true }, },
+				[18] = { 0.0, },
+			},
+		},
+		FlareScale = Transform {
+			Inputs = {
+				Input  = Input { SourceOp = "GlowCombine", Source = "Output", },
+				Size   = Input { SourceOp = "FlareSpline", Source = "Value", },
+				Center = Input { Value = { 0.5, 0.5 }, },
+			},
+		},
+		FlareFinal = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "FlareBg",    Source = "Output", },
+				Foreground = Input { SourceOp = "FlareScale", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "FlareFinal", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,36 @@
+{
+	Tools = ordered() {
+		TitleText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "POP!", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Black", },
+				Size = Input {
+					SourceOp = "SizeSpline",
+					Source = "Value",
+				},
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		SizeSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.001 },
+				[12] = { 0.115 },
+				[18] = { 0.092 },
+				[24] = { 0.1, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "TitleText", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

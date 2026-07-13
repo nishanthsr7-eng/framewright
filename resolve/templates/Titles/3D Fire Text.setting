@@ -1,0 +1,60 @@
+{
+	Tools = ordered() {
+		FireText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "FIRE", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Black", },
+				Size = Input { Value = 0.14, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1 = Input { Value = 1,    },
+				Green1 = Input { Value = 0.85, },
+				Blue1 = Input { Value = 0.0,  },
+			},
+		},
+		GlowOrange = Blur {
+			Inputs = {
+				XBlurSize = Input { Value = 28, },
+				Input = Input { SourceOp = "FireText", Source = "Output", },
+			},
+		},
+		GlowRed = Blur {
+			Inputs = {
+				XBlurSize = Input { Value = 12, },
+				Input = Input { SourceOp = "FireText", Source = "Output", },
+			},
+		},
+		RedShift = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "GlowOrange", Source = "Output", },
+				MidtonesR = Input { Value = 0.3, },
+				MidtonesG = Input { Value = -0.2, },
+				MidtonesB = Input { Value = -0.5, },
+			},
+		},
+		M1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "RedShift", Source = "Output", },
+				Foreground = Input { SourceOp = "GlowRed", Source = "Output", },
+				ApplyMode = Input { Value = "Screen", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		M2 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "M1", Source = "Output", },
+				Foreground = Input { SourceOp = "FireText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "M2", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

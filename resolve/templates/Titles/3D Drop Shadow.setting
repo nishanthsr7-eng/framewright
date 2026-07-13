@@ -1,0 +1,51 @@
+{
+	Tools = ordered() {
+		MainText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "DROP SHADOW", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.09, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		ShadowCC = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "MainText", Source = "Output", },
+				MasterRGBGain = Input { Value = 0, },
+			},
+		},
+		ShadowBlur = Blur {
+			Inputs = {
+				XBlurSize = Input { Value = 8, },
+				Input = Input { SourceOp = "ShadowCC", Source = "Output", },
+			},
+		},
+		ShadowShift = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "ShadowBlur", Source = "Output", },
+				XOffset = Input { Value = 0.012, },
+				YOffset = Input { Value = -0.012, },
+			},
+		},
+		MergeShadow = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "ShadowShift", Source = "Output", },
+				Foreground = Input { SourceOp = "MainText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeShadow", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

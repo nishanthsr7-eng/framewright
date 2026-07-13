@@ -1,0 +1,30 @@
+{
+	Tools = ordered() {
+		GradBg1 = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { SourceOp = "R1", Source = "Value", },
+				TopLeftGreen = Input { SourceOp = "G1", Source = "Value", },
+				TopLeftBlue  = Input { SourceOp = "B1", Source = "Value", },
+				TopLeftAlpha = Input { Value = 1, },
+				BottomRightRed   = Input { SourceOp = "R2", Source = "Value", },
+				BottomRightGreen = Input { SourceOp = "G2", Source = "Value", },
+				BottomRightBlue  = Input { SourceOp = "B2", Source = "Value", },
+				BottomRightAlpha = Input { Value = 1, },
+				Type = Input { Value = FuID { "Linear", }, },
+			},
+		},
+		R1 = BezierSpline { KeyFrames = { [0]={0.5,}, [60]={0.9,}, [120]={0.3,}, [180]={0.5,}, } },
+		G1 = BezierSpline { KeyFrames = { [0]={0.1,}, [60]={0.2,}, [120]={0.7,}, [180]={0.1,}, } },
+		B1 = BezierSpline { KeyFrames = { [0]={0.9,}, [60]={0.3,}, [120]={0.5,}, [180]={0.9,}, } },
+		R2 = BezierSpline { KeyFrames = { [0]={0.1,}, [60]={0.5,}, [120]={0.9,}, [180]={0.1,}, } },
+		G2 = BezierSpline { KeyFrames = { [0]={0.7,}, [60]={0.1,}, [120]={0.3,}, [180]={0.7,}, } },
+		B2 = BezierSpline { KeyFrames = { [0]={0.3,}, [60]={0.8,}, [120]={0.1,}, [180]={0.3,}, } },
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "GradBg1", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

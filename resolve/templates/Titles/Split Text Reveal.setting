@@ -1,0 +1,78 @@
+{
+	Tools = ordered() {
+		Transparent = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+		},
+		TopHalf = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "SPLIT", },
+				Font  = Input { Value = "Arial", },
+				Style = Input { Value = "Bold", },
+				Size  = Input { Value = 0.12, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor   = Input { Value = 0, },
+				Center = Input { SourceOp = "TopPath", Source = "Value", },
+				Red1   = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1  = Input { Value = 1, },
+			},
+		},
+		TopPath = Path {
+			Points = {
+				[0]  = { 0.5, 0.58, },
+				[20] = { 0.5, 0.5, },
+			},
+		},
+		BottomHalf = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "REVEAL", },
+				Font  = Input { Value = "Arial", },
+				Style = Input { Value = "Bold", },
+				Size  = Input { Value = 0.07, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor   = Input { Value = 0, },
+				Center = Input { SourceOp = "BotPath", Source = "Value", },
+				Red1   = Input { Value = 0.4, },
+				Green1 = Input { Value = 0.8, },
+				Blue1  = Input { Value = 1.0, },
+			},
+		},
+		BotPath = Path {
+			Points = {
+				[0]  = { 0.5, 0.38, },
+				[24] = { 0.5, 0.44, },
+			},
+		},
+		SplitAlpha = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0, Flags = { Linear = true }, },
+				[10] = { 1, },
+			},
+		},
+		MergeTop = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Transparent", Source = "Output", },
+				Foreground = Input { SourceOp = "TopHalf",     Source = "Output", },
+				Blend      = Input { SourceOp = "SplitAlpha",  Source = "Value", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeBot = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeTop",   Source = "Output", },
+				Foreground = Input { SourceOp = "BottomHalf", Source = "Output", },
+				Blend      = Input { SourceOp = "SplitAlpha", Source = "Value", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeBot", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

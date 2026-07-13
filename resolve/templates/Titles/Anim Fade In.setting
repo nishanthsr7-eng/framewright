@@ -1,0 +1,35 @@
+{
+	Tools = ordered() {
+		TitleText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "TITLE HERE", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.1, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+				Alpha1 = Input {
+					SourceOp = "FadeSpline",
+					Source = "Value",
+				},
+			},
+		},
+		FadeSpline = BezierSpline {
+			KeyFrames = {
+				[0] = { 0 },
+				[30] = { 1 },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "TitleText", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,92 @@
+{
+	Tools = ordered() {
+		DarkBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0.05, },
+				TopLeftGreen = Input { Value = 0.05, },
+				TopLeftBlue  = Input { Value = 0.05, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		GlitchNoise = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 100, },
+				YScale     = Input { Value = 2, },
+				Contrast   = Input { Value = 8, },
+				Brightness = Input { Value = -0.2, },
+				Seethe     = Input { Value = 0.7, },
+				SeetheRate = Input { Value = 5.0, },
+			},
+		},
+		GlitchShift = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "GlitchNoise", Source = "Output", },
+				XOffset = Input { SourceOp = "GlitchX", Source = "Value", },
+			},
+		},
+		GlitchX = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.0,   Flags = { Linear = true }, },
+				[2]  = { 0.08,  Flags = { Linear = true }, },
+				[3]  = { -0.05, Flags = { Linear = true }, },
+				[5]  = { 0.12,  Flags = { Linear = true }, },
+				[6]  = { 0.0,   Flags = { Linear = true }, },
+				[10] = { 0.0,   Flags = { Linear = true }, },
+				[11] = { -0.09, Flags = { Linear = true }, },
+				[12] = { 0.0,   Flags = { Linear = true }, },
+			},
+		},
+		CyanTint = ColorCorrector {
+			Inputs = {
+				Input     = Input { SourceOp = "GlitchShift", Source = "Output", },
+				GainRed   = Input { Value = 0.2, },
+				GainGreen = Input { Value = 1.3, },
+				GainBlue  = Input { Value = 1.5, },
+			},
+		},
+		GlitchNoise2 = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 80, },
+				YScale     = Input { Value = 1.5, },
+				Contrast   = Input { Value = 10, },
+				Brightness = Input { Value = -0.3, },
+				Seethe     = Input { Value = 0.3, },
+				SeetheRate = Input { Value = 8.0, },
+			},
+		},
+		MagentaTint = ColorCorrector {
+			Inputs = {
+				Input     = Input { SourceOp = "GlitchNoise2", Source = "Output", },
+				GainRed   = Input { Value = 1.4, },
+				GainGreen = Input { Value = 0.2, },
+				GainBlue  = Input { Value = 1.3, },
+			},
+		},
+		Merge1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "DarkBg",  Source = "Output", },
+				Foreground = Input { SourceOp = "CyanTint", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		Merge2 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Merge1",      Source = "Output", },
+				Foreground = Input { SourceOp = "MagentaTint", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.6, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "Merge2", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

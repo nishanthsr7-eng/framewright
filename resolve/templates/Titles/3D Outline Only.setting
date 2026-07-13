@@ -1,0 +1,59 @@
+{
+	Tools = ordered() {
+		FillText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "OUTLINE", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Black", },
+				Size = Input { Value = 0.12, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		OuterBlur = Blur {
+			Inputs = {
+				XBlurSize = Input { Value = 3.5, },
+				Input = Input { SourceOp = "FillText", Source = "Output", },
+			},
+		},
+		InnerCC = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "FillText", Source = "Output", },
+				MasterRGBGain = Input { Value = 0, },
+				MasterRGBLift = Input { Value = 0, },
+			},
+		},
+		ErodeInner = Erode {
+			Inputs = {
+				XBlurSize = Input { Value = 1.5, },
+				Input = Input { SourceOp = "InnerCC", Source = "Output", },
+			},
+		},
+		OutlineColor = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "OuterBlur", Source = "Output", },
+				MidtonesR = Input { Value = 0.3, },
+				MidtonesG = Input { Value = 0.7, },
+				MidtonesB = Input { Value = 1.0, },
+			},
+		},
+		MergeOutline = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "OutlineColor", Source = "Output", },
+				Foreground = Input { SourceOp = "ErodeInner", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeOutline", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

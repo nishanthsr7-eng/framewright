@@ -1,0 +1,96 @@
+{
+	Tools = ordered() {
+		NightSky = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0.0, },
+				TopLeftGreen = Input { Value = 0.01, },
+				TopLeftBlue  = Input { Value = 0.06, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		AuroraNoise = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 3, },
+				YScale     = Input { Value = 0.4, },
+				Contrast   = Input { Value = 2.0, },
+				Brightness = Input { Value = 0.1, },
+				Seethe     = Input { Value = 0.2, },
+				SeetheRate = Input { Value = 0.15, },
+			},
+		},
+		AuroraMove = Transform {
+			Inputs = {
+				Input  = Input { SourceOp = "AuroraNoise", Source = "Output", },
+				YOffset = Input { Value = 0.2, },
+				Size   = Input { Value = 1.0, },
+			},
+		},
+		GreenShift = ColorCorrector {
+			Inputs = {
+				Input     = Input { SourceOp = "AuroraMove", Source = "Output", },
+				GainRed   = Input { Value = 0.2, },
+				GainGreen = Input { Value = 1.5, },
+				GainBlue  = Input { Value = 0.8, },
+			},
+		},
+		AuroraBlur = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "GreenShift", Source = "Output", },
+				XBlurSize = Input { Value = 10, },
+				YBlurSize = Input { Value = 25, },
+			},
+		},
+		AuroraMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "NightSky",  Source = "Output", },
+				Foreground = Input { SourceOp = "AuroraBlur", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.8, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		AuroraBlue = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 5, },
+				YScale     = Input { Value = 0.3, },
+				Contrast   = Input { Value = 2.5, },
+				Brightness = Input { Value = -0.1, },
+				Seethe     = Input { Value = 0.4, },
+				SeetheRate = Input { Value = 0.2, },
+			},
+		},
+		BlueTint = ColorCorrector {
+			Inputs = {
+				Input     = Input { SourceOp = "AuroraBlue", Source = "Output", },
+				GainRed   = Input { Value = 0.5, },
+				GainGreen = Input { Value = 0.5, },
+				GainBlue  = Input { Value = 1.8, },
+			},
+		},
+		BlueBlur = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "BlueTint", Source = "Output", },
+				XBlurSize = Input { Value = 8, },
+				YBlurSize = Input { Value = 30, },
+			},
+		},
+		FinalMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "AuroraMerge", Source = "Output", },
+				Foreground = Input { SourceOp = "BlueBlur",    Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.5, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "FinalMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

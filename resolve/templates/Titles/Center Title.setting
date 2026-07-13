@@ -1,0 +1,47 @@
+{
+	Tools = ordered() {
+		SubTitle = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Subtitle Here", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Regular", },
+				Size = Input { Value = 0.045, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.42 }, },
+				Red1 = Input { Value = 0.75, },
+				Green1 = Input { Value = 0.75, },
+				Blue1 = Input { Value = 0.75, },
+			},
+		},
+		MainTitle = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "MAIN TITLE", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.11, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 1, },
+				Center = Input { Value = { 0.5, 0.55 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		Merge1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SubTitle", Source = "Output", },
+				Foreground = Input { SourceOp = "MainTitle", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "Merge1", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

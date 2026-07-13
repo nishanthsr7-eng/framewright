@@ -1,0 +1,78 @@
+{
+	Tools = ordered() {
+		TopBar = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue  = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		TopMask = RectangleMask {
+			Inputs = {
+				Width    = Input { Value = 2.0, },
+				Height   = Input { Value = 0.22, },
+				SoftEdge = Input { Value = 0, },
+				Center   = Input { Value = { 0.5, 0.89 }, },
+			},
+		},
+		BotMask = RectangleMask {
+			Inputs = {
+				Width    = Input { Value = 2.0, },
+				Height   = Input { Value = 0.22, },
+				SoftEdge = Input { Value = 0, },
+				Center   = Input { Value = { 0.5, 0.11 }, },
+			},
+		},
+		Transparent = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+		},
+		TopLayer = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Transparent", Source = "Output", },
+				Foreground = Input { SourceOp = "TopBar",      Source = "Output", },
+				Mask       = Input { SourceOp = "TopMask",     Source = "Mask", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		BotLayer = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TopLayer", Source = "Output", },
+				Foreground = Input { SourceOp = "TopBar",   Source = "Output", },
+				Mask       = Input { SourceOp = "BotMask",  Source = "Mask", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		SafeLabel = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "@YourHandle", },
+				Font  = Input { Value = "Arial", },
+				Style = Input { Value = "Bold", },
+				Size  = Input { Value = 0.04, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor   = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.11 }, },
+				Red1   = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1  = Input { Value = 1, },
+			},
+		},
+		MergeLabel = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "BotLayer",  Source = "Output", },
+				Foreground = Input { SourceOp = "SafeLabel", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeLabel", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

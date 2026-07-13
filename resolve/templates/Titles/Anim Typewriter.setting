@@ -1,0 +1,42 @@
+{
+	Tools = ordered() {
+		TitleText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "TYPE ON TEXT...", },
+				Font = Input { Value = "Courier New", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.065, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.06, 0.5 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		WriteOnCtrl = WriteOnStyle {
+			Inputs = {
+				Input = Input { SourceOp = "TitleText", Source = "Output", },
+				Start = Input { Value = 0, },
+				End = Input {
+					SourceOp = "WriteOnEnd",
+					Source = "Value",
+				},
+				SoftEdge = Input { Value = 0, },
+			},
+		},
+		WriteOnEnd = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0, },
+				[60] = { 1, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "WriteOnCtrl", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

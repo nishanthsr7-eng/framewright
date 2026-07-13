@@ -1,0 +1,70 @@
+{
+	Tools = ordered() {
+		DarkBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0.05, },
+				TopLeftGreen = Input { Value = 0.05, },
+				TopLeftBlue  = Input { Value = 0.08, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		LogoText = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "YOUR LOGO", },
+				Font  = Input { Value = "Arial", },
+				Style = Input { Value = "Bold", },
+				Size  = Input { SourceOp = "LogoSize", Source = "Value", },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor   = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1   = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1  = Input { Value = 1, },
+				Alpha1 = Input { SourceOp = "LogoAlpha", Source = "Value", },
+			},
+		},
+		LogoSize = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.001, },
+				[18] = { 0.11, },
+				[24] = { 0.095, },
+				[30] = { 0.1, },
+			},
+		},
+		LogoAlpha = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0, Flags = { Linear = true }, },
+				[12] = { 1, },
+			},
+		},
+		GlowBlur = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "LogoText", Source = "Output", },
+				XBlurSize = Input { Value = 25, },
+				YBlurSize = Input { Value = 25, },
+			},
+		},
+		MergeGlow = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "DarkBg",   Source = "Output", },
+				Foreground = Input { SourceOp = "GlowBlur", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeLogo = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeGlow", Source = "Output", },
+				Foreground = Input { SourceOp = "LogoText",  Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeLogo", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

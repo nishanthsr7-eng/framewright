@@ -1,0 +1,69 @@
+{
+	Tools = ordered() {
+		GoldText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "GOLD", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Black", },
+				Size = Input { Value = 0.12, },
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1 = Input { Value = 1,    },
+				Green1 = Input { Value = 0.78, },
+				Blue1 = Input { Value = 0.0,  },
+			},
+		},
+		ShineMask = Blur {
+			Inputs = {
+				XBlurSize = Input { Value = 4, },
+				Input = Input { SourceOp = "GoldText", Source = "Output", },
+			},
+		},
+		HighlightCC = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "ShineMask", Source = "Output", },
+				HighlightsR = Input { Value = 0.5, },
+				HighlightsG = Input { Value = 0.4, },
+				HighlightsB = Input { Value = 0.0, },
+				MasterRGBGain = Input { Value = 2.2, },
+			},
+		},
+		ShadowText = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "GoldText", Source = "Output", },
+				MasterRGBGain = Input { Value = 0.25, },
+			},
+		},
+		ShiftShadow = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "ShadowText", Source = "Output", },
+				XOffset = Input { Value = 0.004, },
+				YOffset = Input { Value = -0.004, },
+			},
+		},
+		MergeShadow = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "ShiftShadow", Source = "Output", },
+				Foreground = Input { SourceOp = "GoldText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeShine = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeShadow", Source = "Output", },
+				Foreground = Input { SourceOp = "HighlightCC", Source = "Output", },
+				ApplyMode = Input { Value = "Screen", },
+				Blend = Input { Value = 0.6, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeShine", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

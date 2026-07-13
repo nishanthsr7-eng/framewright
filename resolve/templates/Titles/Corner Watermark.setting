@@ -1,0 +1,26 @@
+{
+	Tools = ordered() {
+		WatermarkText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "@YourHandle", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.038, },
+				HorizontalAnchor = Input { Value = 1, },
+				VerticalAnchor = Input { Value = 1, },
+				Center = Input { Value = { 0.96, 0.94 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+				Alpha1 = Input { Value = 0.6, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "WatermarkText", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

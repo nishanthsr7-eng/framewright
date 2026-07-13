@@ -1,0 +1,84 @@
+{
+	Tools = ordered() {
+		NeonBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0.02, },
+				TopLeftGreen = Input { Value = 0.02, },
+				TopLeftBlue  = Input { Value = 0.05, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		NeonText = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "NEON", },
+				Font = Input { Value = "Arial", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.12, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor   = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1   = Input { Value = 0, },
+				Green1 = Input { Value = 0.85, },
+				Blue1  = Input { Value = 1, },
+				Alpha1 = Input { SourceOp = "FlickerSpline", Source = "Value", },
+			},
+		},
+		FlickerSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 1, Flags = { Linear = true }, },
+				[4]  = { 1, Flags = { Linear = true }, },
+				[5]  = { 0.1, Flags = { Linear = true }, },
+				[6]  = { 1, Flags = { Linear = true }, },
+				[14] = { 1, Flags = { Linear = true }, },
+				[15] = { 0, Flags = { Linear = true }, },
+				[16] = { 0.8, Flags = { Linear = true }, },
+				[17] = { 0, Flags = { Linear = true }, },
+				[18] = { 1, Flags = { Linear = true }, },
+			},
+		},
+		GlowBlurWide = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "NeonText", Source = "Output", },
+				XBlurSize = Input { Value = 20, },
+				YBlurSize = Input { Value = 20, },
+			},
+		},
+		GlowBlurTight = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "NeonText", Source = "Output", },
+				XBlurSize = Input { Value = 5, },
+				YBlurSize = Input { Value = 5, },
+			},
+		},
+		GlowCombine = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "GlowBlurWide",  Source = "Output", },
+				Foreground = Input { SourceOp = "GlowBlurTight", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeGlowBg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "NeonBg",       Source = "Output", },
+				Foreground = Input { SourceOp = "GlowCombine",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeText = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeGlowBg", Source = "Output", },
+				Foreground = Input { SourceOp = "NeonText",    Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeText", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

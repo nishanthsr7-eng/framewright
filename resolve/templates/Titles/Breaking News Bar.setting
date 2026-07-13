@@ -1,0 +1,72 @@
+{
+	Tools = ordered() {
+		NewsBar = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Type = Input { Value = 0, },
+				TopLeftRed = Input { Value = 0.85, },
+				TopLeftGreen = Input { Value = 0.1, },
+				TopLeftBlue = Input { Value = 0.1, },
+				TopLeftAlpha = Input { Value = 0.92, },
+			},
+		},
+		BarTransform = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "NewsBar", Source = "Output", },
+				Center = Input { Value = { 0.5, 0.115 }, },
+				Size = Input { Value = 1, },
+				Aspect = Input { Value = 7.5, },
+			},
+		},
+		TagText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "BREAKING", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.038, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.02, 0.115 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		BodyText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Your headline text goes here", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Regular", },
+				Size = Input { Value = 0.038, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.22, 0.115 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		MergeBar = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "BarTransform", Source = "Output", },
+				Foreground = Input { SourceOp = "TagText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeBody = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeBar", Source = "Output", },
+				Foreground = Input { SourceOp = "BodyText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeBody", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

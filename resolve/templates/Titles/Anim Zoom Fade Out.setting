@@ -1,0 +1,44 @@
+{
+	Tools = ordered() {
+		TitleText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "ZOOM OUT", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input {
+					SourceOp = "ZoomSpline",
+					Source = "Value",
+				},
+				HorizontalAnchor = Input { Value = 0.5, },
+				VerticalAnchor = Input { Value = 0.5, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+				Alpha1 = Input {
+					SourceOp = "FadeOut",
+					Source = "Value",
+				},
+			},
+		},
+		ZoomSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.1, },
+				[30] = { 0.18, },
+			},
+		},
+		FadeOut = BezierSpline {
+			KeyFrames = {
+				[0]  = { 1, },
+				[30] = { 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "TitleText", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

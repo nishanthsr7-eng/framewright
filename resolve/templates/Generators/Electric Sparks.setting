@@ -1,0 +1,97 @@
+{
+	Tools = ordered() {
+		DarkBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0.02, },
+				TopLeftGreen = Input { Value = 0.02, },
+				TopLeftBlue  = Input { Value = 0.06, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		SparkNoise1 = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 0.3, },
+				YScale     = Input { Value = 0.3, },
+				Contrast   = Input { Value = 10, },
+				Brightness = Input { Value = -0.4, },
+				Seethe     = Input { Value = 0.9, },
+				SeetheRate = Input { Value = 4.0, },
+			},
+		},
+		SparkBlur1 = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "SparkNoise1", Source = "Output", },
+				XBlurSize = Input { Value = 3, },
+				YBlurSize = Input { Value = 3, },
+			},
+		},
+		SparkTint1 = ColorCorrector {
+			Inputs = {
+				Input     = Input { SourceOp = "SparkBlur1", Source = "Output", },
+				GainRed   = Input { Value = 0.5, },
+				GainGreen = Input { Value = 0.8, },
+				GainBlue  = Input { Value = 2.0, },
+			},
+		},
+		SparkNoise2 = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 0.5, },
+				YScale     = Input { Value = 0.15, },
+				Contrast   = Input { Value = 12, },
+				Brightness = Input { Value = -0.5, },
+				Seethe     = Input { Value = 0.6, },
+				SeetheRate = Input { Value = 6.0, },
+			},
+		},
+		SparkTint2 = ColorCorrector {
+			Inputs = {
+				Input     = Input { SourceOp = "SparkNoise2", Source = "Output", },
+				GainRed   = Input { Value = 1.5, },
+				GainGreen = Input { Value = 1.2, },
+				GainBlue  = Input { Value = 2.0, },
+			},
+		},
+		SparkMerge1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "DarkBg",    Source = "Output", },
+				Foreground = Input { SourceOp = "SparkTint1", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		SparkMerge2 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SparkMerge1", Source = "Output", },
+				Foreground = Input { SourceOp = "SparkTint2",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.6, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		GlowPass = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "SparkMerge2", Source = "Output", },
+				XBlurSize = Input { Value = 5, },
+				YBlurSize = Input { Value = 5, },
+			},
+		},
+		FinalMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SparkMerge2", Source = "Output", },
+				Foreground = Input { SourceOp = "GlowPass",    Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.5, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "FinalMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

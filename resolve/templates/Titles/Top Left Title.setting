@@ -1,0 +1,47 @@
+{
+	Tools = ordered() {
+		TopText = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "EPISODE TITLE", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.055, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor = Input { Value = 1, },
+				Center = Input { Value = { 0.05, 0.9 }, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		EpNum = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "EP. 01", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Regular", },
+				Size = Input { Value = 0.038, },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor = Input { Value = 1, },
+				Center = Input { Value = { 0.05, 0.83 }, },
+				Red1 = Input { Value = 0.65, },
+				Green1 = Input { Value = 0.82, },
+				Blue1 = Input { Value = 1, },
+			},
+		},
+		Merge1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "EpNum", Source = "Output", },
+				Foreground = Input { SourceOp = "TopText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "Merge1", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

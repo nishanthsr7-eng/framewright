@@ -1,0 +1,57 @@
+{
+	Tools = ordered() {
+		Transparent = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+		},
+		ReactionText = TextPlus {
+			Inputs = {
+				StyledText = Input { Value = "WOW!", },
+				Font  = Input { Value = "Arial", },
+				Style = Input { Value = "Bold", },
+				Size  = Input { SourceOp = "PopSize", Source = "Value", },
+				HorizontalAnchor = Input { Value = 0, },
+				VerticalAnchor   = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Red1   = Input { Value = 1, },
+				Green1 = Input { Value = 0.9, },
+				Blue1  = Input { Value = 0.1, },
+				Alpha1 = Input { SourceOp = "PopAlpha", Source = "Value", },
+			},
+		},
+		PopSize = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.001, },
+				[8]  = { 0.145, },
+				[12] = { 0.115, },
+				[16] = { 0.13, },
+				[30] = { 0.13, },
+				[40] = { 0.13, Flags = { Linear = true }, },
+				[50] = { 0.001, Flags = { Linear = true }, },
+			},
+		},
+		PopAlpha = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0, Flags = { Linear = true }, },
+				[8]  = { 1, },
+				[35] = { 1, Flags = { Linear = true }, },
+				[50] = { 0, Flags = { Linear = true }, },
+			},
+		},
+		MergePop = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Transparent",  Source = "Output", },
+				Foreground = Input { SourceOp = "ReactionText", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergePop", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}
