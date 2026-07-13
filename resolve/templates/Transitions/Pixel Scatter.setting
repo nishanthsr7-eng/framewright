@@ -1,0 +1,49 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		MediaIn2 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		TransitionAnalog1 = TransitionAnalog {},
+		ScatterNoise = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 6, },
+				YScale     = Input { Value = 6, },
+				Contrast   = Input { SourceOp = "ContrastSpline", Source = "Value", },
+				Brightness = Input { SourceOp = "BrightSpline",   Source = "Value", },
+				Seethe     = Input { Value = 0.2, },
+				SeetheRate = Input { Value = 0.4, },
+			},
+		},
+		ContrastSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 2,  Flags = { Linear = true }, },
+				[20] = { 12, Flags = { Linear = true }, },
+			},
+		},
+		BrightSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.5,  Flags = { Linear = true }, },
+				[20] = { -0.5, Flags = { Linear = true }, },
+			},
+		},
+		ScatterMatte = MatteControl {
+			Inputs = {
+				Input = Input { SourceOp = "MediaIn2",     Source = "Output", },
+				Mask  = Input { SourceOp = "ScatterNoise", Source = "Output", },
+			},
+		},
+		MergeFinal = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1",    Source = "Output", },
+				Foreground = Input { SourceOp = "ScatterMatte", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeFinal", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

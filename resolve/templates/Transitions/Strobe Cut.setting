@@ -1,0 +1,34 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		MediaIn2 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		TransitionAnalog1 = TransitionAnalog {},
+		StrobeDis = Dissolve {
+			Inputs = {
+				Mix        = Input { SourceOp = "StrobeSpline", Source = "Value", },
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "MediaIn2", Source = "Output", },
+			},
+		},
+		StrobeSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0, Flags = { Linear = true }, },
+				[3]  = { 1, Flags = { Linear = true }, },
+				[5]  = { 0, Flags = { Linear = true }, },
+				[7]  = { 1, Flags = { Linear = true }, },
+				[9]  = { 0, Flags = { Linear = true }, },
+				[11] = { 1, Flags = { Linear = true }, },
+				[13] = { 0, Flags = { Linear = true }, },
+				[15] = { 1, Flags = { Linear = true }, },
+				[17] = { 0, Flags = { Linear = true }, },
+				[20] = { 1, Flags = { Linear = true }, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "StrobeDis", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

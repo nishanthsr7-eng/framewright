@@ -1,0 +1,64 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		Echo1 = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "MediaIn1", Source = "Output", },
+				XOffset = Input { Value = -0.02, },
+				YOffset = Input { Value = 0.01, },
+			},
+		},
+		Echo2 = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "MediaIn1", Source = "Output", },
+				XOffset = Input { Value = -0.04, },
+				YOffset = Input { Value = 0.02, },
+			},
+		},
+		Echo3 = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "MediaIn1", Source = "Output", },
+				XOffset = Input { Value = -0.06, },
+				YOffset = Input { Value = 0.03, },
+			},
+		},
+		MergeE3 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "Echo3",     Source = "Output", },
+				Blend = Input { Value = 0.25, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeE2 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeE3", Source = "Output", },
+				Foreground = Input { SourceOp = "Echo2",   Source = "Output", },
+				Blend = Input { Value = 0.35, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeE1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeE2", Source = "Output", },
+				Foreground = Input { SourceOp = "Echo1",   Source = "Output", },
+				Blend = Input { Value = 0.5, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeFront = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeE1",  Source = "Output", },
+				Foreground = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Blend = Input { Value = 1.0, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeFront", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

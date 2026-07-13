@@ -1,0 +1,34 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		DesatCopy = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+				SaturationMaster = Input { Value = 0, },
+			},
+		},
+		ScreenBlend = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "DesatCopy", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.5, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		FinalGrade = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "ScreenBlend", Source = "Output", },
+				ContrastMaster    = Input { Value = 1.5, },
+				SaturationMaster  = Input { Value = 0.4, },
+				BrightnessLow     = Input { Value = 0.04, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "FinalGrade", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

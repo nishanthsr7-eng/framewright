@@ -1,0 +1,42 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			Inputs = {
+				GlobalIn = Input { Value = 0, },
+			},
+		},
+		BlurredCopy = Blur {
+			Inputs = {
+				XBlurSize = Input { Value = 30, },
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+			},
+		},
+		CenterMask = EllipseMask {
+			Inputs = {
+				Width = Input { Value = 0.6, },
+				Height = Input { Value = 0.6, },
+				SoftEdge = Input { Value = 0.35, },
+			},
+		},
+		SharpCenter = MatteControl {
+			Inputs = {
+				Garbage = Input { SourceOp = "CenterMask", Source = "Mask", },
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				InvertGarbage = Input { Value = 0, },
+			},
+		},
+		MergeBlur = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "BlurredCopy", Source = "Output", },
+				Foreground = Input { SourceOp = "SharpCenter", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeBlur", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

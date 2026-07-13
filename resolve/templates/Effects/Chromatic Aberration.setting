@@ -1,0 +1,86 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		RedSolid = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 1, }, TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 0, }, TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		GreenSolid = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, }, TopLeftGreen = Input { Value = 1, },
+				TopLeftBlue = Input { Value = 0, }, TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		BlueSolid = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, }, TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 1, }, TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		RedExtract = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1",  Source = "Output", },
+				Foreground = Input { SourceOp = "RedSolid",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Multiply", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		GreenExtract = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1",   Source = "Output", },
+				Foreground = Input { SourceOp = "GreenSolid", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Multiply", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		BlueExtract = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1",  Source = "Output", },
+				Foreground = Input { SourceOp = "BlueSolid", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Multiply", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		RedShifted = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "RedExtract", Source = "Output", },
+				XOffset = Input { Value = 0.009, },
+				YOffset = Input { Value = 0.003, },
+			},
+		},
+		BlueShifted = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "BlueExtract", Source = "Output", },
+				XOffset = Input { Value = -0.009, },
+				YOffset = Input { Value = -0.003, },
+			},
+		},
+		MergeRG = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "GreenExtract", Source = "Output", },
+				Foreground = Input { SourceOp = "RedShifted",   Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeRGB = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeRG",     Source = "Output", },
+				Foreground = Input { SourceOp = "BlueShifted", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeRGB", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

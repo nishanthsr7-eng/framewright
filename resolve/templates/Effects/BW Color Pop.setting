@@ -1,0 +1,35 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		Grayscale = ColorCorrector {
+			Inputs = {
+				Input            = Input { SourceOp = "MediaIn1", Source = "Output", },
+				SaturationMaster = Input { Value = 0, },
+				ContrastMaster   = Input { Value = 1.1, },
+			},
+		},
+		ColorBoost = ColorCorrector {
+			Inputs = {
+				Input            = Input { SourceOp = "MediaIn1", Source = "Output", },
+				SaturationMaster = Input { Value = 2.5, },
+				ContrastMaster   = Input { Value = 2.0, },
+				BrightnessLow    = Input { Value = -0.5, },
+			},
+		},
+		ColorPop = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Grayscale",  Source = "Output", },
+				Foreground = Input { SourceOp = "ColorBoost", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Overlay", }, },
+				Blend      = Input { Value = 0.18, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "ColorPop", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

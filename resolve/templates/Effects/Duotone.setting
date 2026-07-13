@@ -1,0 +1,28 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		Desaturate = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+				SaturationMaster = Input { Value = 0, },
+			},
+		},
+		DuoTone = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "Desaturate", Source = "Output", },
+				LowRed    = Input { Value = 0.10, },
+				LowGreen  = Input { Value = 0.02, },
+				LowBlue   = Input { Value = 0.35, },
+				HighRed   = Input { Value = 1.0, },
+				HighGreen = Input { Value = 0.85, },
+				HighBlue  = Input { Value = 0.10, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "DuoTone", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

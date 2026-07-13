@@ -1,0 +1,31 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		Pass1 = ColorCorrector {
+			Inputs = {
+				Input          = Input { SourceOp = "MediaIn1", Source = "Output", },
+				ContrastMaster = Input { Value = 2.5, },
+				BrightnessLow  = Input { Value = -0.15, },
+			},
+		},
+		Pass2 = ColorCorrector {
+			Inputs = {
+				Input          = Input { SourceOp = "Pass1", Source = "Output", },
+				ContrastMaster = Input { Value = 2.0, },
+			},
+		},
+		Pass3 = ColorCorrector {
+			Inputs = {
+				Input            = Input { SourceOp = "Pass2", Source = "Output", },
+				ContrastMaster   = Input { Value = 1.8, },
+				SaturationMaster = Input { Value = 1.4, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "Pass3", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,74 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		Desaturate = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+				SaturationMaster = Input { Value = 0.65, },
+				ContrastMaster    = Input { Value = 1.08, },
+				BrightnessLow    = Input { Value = -0.04, },
+			},
+		},
+		ScanlineNoise = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Seethe = Input { Value = 0.15, },
+				SeetheRate = Input { Value = 0.5, },
+				XScale = Input { Value = 100, },
+				YScale = Input { Value = 1, },
+				Contrast = Input { Value = 6, },
+				Brightness = Input { Value = 0.15, },
+			},
+		},
+		ScanlineMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Desaturate",   Source = "Output", },
+				Foreground = Input { SourceOp = "ScanlineNoise", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Overlay", }, },
+				Blend      = Input { Value = 0.1, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		Grain = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Seethe = Input { Value = 0.5, },
+				SeetheRate = Input { Value = 1.0, },
+				XScale = Input { Value = 2, },
+				YScale = Input { Value = 2, },
+				Contrast = Input { Value = 3, },
+				Brightness = Input { Value = 0.3, },
+			},
+		},
+		GrainMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "ScanlineMerge", Source = "Output", },
+				Foreground = Input { SourceOp = "Grain",         Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Overlay", }, },
+				Blend      = Input { Value = 0.12, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		RedShift = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "GrainMerge", Source = "Output", },
+				XOffset = Input { Value = 0.003, },
+				YOffset = Input { Value = 0, },
+			},
+		},
+		ChromaBlend = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "GrainMerge", Source = "Output", },
+				Foreground = Input { SourceOp = "RedShift",   Source = "Output", },
+				Blend      = Input { Value = 0.35, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "ChromaBlend", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

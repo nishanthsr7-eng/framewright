@@ -1,0 +1,39 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		PastelGrade = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+				ContrastMaster   = Input { Value = 0.75, },
+				SaturationMaster = Input { Value = 0.7, },
+				BrightnessLow    = Input { Value = 0.12, },
+				BrightnessHigh   = Input { Value = -0.05, },
+				LowRed    = Input { Value = 1.05, },
+				LowGreen  = Input { Value = 1.02, },
+				LowBlue   = Input { Value = 1.12, },
+			},
+		},
+		DreamBlur = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "PastelGrade", Source = "Output", },
+				XBlurSize = Input { Value = 14, },
+				YBlurSize = Input { Value = 14, },
+			},
+		},
+		DreamMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "PastelGrade", Source = "Output", },
+				Foreground = Input { SourceOp = "DreamBlur",   Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.3, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "DreamMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

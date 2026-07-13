@@ -1,0 +1,109 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		SepiaGrade = ColorCorrector {
+			Inputs = {
+				Input            = Input { SourceOp = "MediaIn1", Source = "Output", },
+				SaturationMaster = Input { Value = 0.1, },
+				ContrastMaster   = Input { Value = 1.15, },
+				GainRed          = Input { Value = 1.18, },
+				GainGreen        = Input { Value = 1.05, },
+				GainBlue         = Input { Value = 0.72, },
+			},
+		},
+		FlickerCC = ColorCorrector {
+			Inputs = {
+				Input         = Input { SourceOp = "SepiaGrade", Source = "Output", },
+				MasterRGBGain = Input { SourceOp = "FlickerSpline", Source = "Value", },
+			},
+		},
+		FlickerSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 1.00, Flags = { Linear = true }, },
+				[3]  = { 0.92, Flags = { Linear = true }, },
+				[7]  = { 1.04, Flags = { Linear = true }, },
+				[12] = { 0.96, Flags = { Linear = true }, },
+				[16] = { 1.02, Flags = { Linear = true }, },
+				[20] = { 0.94, Flags = { Linear = true }, },
+				[24] = { 1.00, Flags = { Linear = true }, },
+			},
+		},
+		ScratchNoise = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 0.5, },
+				YScale     = Input { Value = 80, },
+				Contrast   = Input { Value = 10, },
+				Brightness = Input { Value = -0.45, },
+				Seethe     = Input { Value = 0.3, },
+				SeetheRate = Input { Value = 0.8, },
+			},
+		},
+		ScratchMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "FlickerCC",    Source = "Output", },
+				Foreground = Input { SourceOp = "ScratchNoise", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Overlay", }, },
+				Blend      = Input { Value = 0.06, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		GrainNoise = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 2, },
+				YScale     = Input { Value = 2, },
+				Contrast   = Input { Value = 4, },
+				Brightness = Input { Value = 0.2, },
+				Seethe     = Input { Value = 0.6, },
+				SeetheRate = Input { Value = 1.5, },
+			},
+		},
+		GrainMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "ScratchMerge", Source = "Output", },
+				Foreground = Input { SourceOp = "GrainNoise",   Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Overlay", }, },
+				Blend      = Input { Value = 0.1, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		VigMask = EllipseMask {
+			Inputs = {
+				Width    = Input { Value = 0.85, },
+				Height   = Input { Value = 0.85, },
+				SoftEdge = Input { Value = 0.5, },
+			},
+		},
+		DarkBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue  = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 0.6, },
+			},
+		},
+		VigMatte = MatteControl {
+			Inputs = {
+				Input  = Input { SourceOp = "GrainMerge", Source = "Output", },
+				Mask   = Input { SourceOp = "VigMask",    Source = "Mask", },
+				Invert = Input { Value = 1, },
+			},
+		},
+		VigMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "GrainMerge", Source = "Output", },
+				Foreground = Input { SourceOp = "DarkBg",     Source = "Output", },
+				Mask       = Input { SourceOp = "VigMatte",   Source = "Mask", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "VigMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

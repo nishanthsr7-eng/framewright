@@ -1,0 +1,43 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		CyberpunkGrade = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+				SaturationMaster = Input { Value = 1.6, },
+				ContrastMaster   = Input { Value = 1.3, },
+				LowRed    = Input { Value = 0.55, },
+				LowGreen  = Input { Value = 0.65, },
+				LowBlue   = Input { Value = 1.2, },
+				HighRed   = Input { Value = 1.3, },
+				HighGreen = Input { Value = 0.7, },
+				HighBlue  = Input { Value = 1.3, },
+				MidRed    = Input { Value = 0.8, },
+				MidGreen  = Input { Value = 0.9, },
+				MidBlue   = Input { Value = 1.1, },
+			},
+		},
+		NeonGlow = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "CyberpunkGrade", Source = "Output", },
+				XBlurSize = Input { Value = 8, },
+				YBlurSize = Input { Value = 8, },
+			},
+		},
+		GlowMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CyberpunkGrade", Source = "Output", },
+				Foreground = Input { SourceOp = "NeonGlow",       Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.25, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "GlowMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

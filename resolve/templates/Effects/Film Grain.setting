@@ -1,0 +1,34 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			Inputs = {
+				GlobalIn = Input { Value = 0, },
+			},
+		},
+		Noise1 = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Detail = Input { Value = 5.5, },
+				Contrast = Input { Value = 1.0, },
+				XScale = Input { Value = 0.04, },
+				YScale = Input { Value = 0.04, },
+				Seethe = Input { Value = 0.5, },
+			},
+		},
+		GrainMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "Noise1", Source = "Output", },
+				ApplyMode = Input { Value = "Overlay", },
+				Blend = Input { Value = 0.12, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "GrainMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,70 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		MediaIn2 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		TransitionAnalog1 = TransitionAnalog {},
+		ZoomOut = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Size = Input { SourceOp = "ZoomOutSpline", Source = "Value", },
+				Center = Input { Value = { 0.5, 0.5 }, },
+			},
+		},
+		ZoomOutSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 1.0, },
+				[20] = { 1.5, },
+			},
+		},
+		BlurOut = Blur {
+			Inputs = {
+				XBlurSize = Input { SourceOp = "BlurOutSpline", Source = "Value", },
+				Input = Input { SourceOp = "ZoomOut", Source = "Output", },
+			},
+		},
+		BlurOutSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0, },
+				[20] = { 40, },
+			},
+		},
+		ZoomIn = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "MediaIn2", Source = "Output", },
+				Size = Input { SourceOp = "ZoomInSpline", Source = "Value", },
+				Center = Input { Value = { 0.5, 0.5 }, },
+			},
+		},
+		ZoomInSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 1.5, },
+				[20] = { 1.0, },
+			},
+		},
+		BlurIn = Blur {
+			Inputs = {
+				XBlurSize = Input { SourceOp = "BlurInSpline", Source = "Value", },
+				Input = Input { SourceOp = "ZoomIn", Source = "Output", },
+			},
+		},
+		BlurInSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 40, },
+				[20] = { 0, },
+			},
+		},
+		Dissolve1 = Dissolve {
+			Inputs = {
+				Mix = Input { SourceOp = "TransitionAnalog1", Source = "Value", },
+				Background = Input { SourceOp = "BlurOut", Source = "Output", },
+				Foreground = Input { SourceOp = "BlurIn",  Source = "Output", },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "Dissolve1", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,113 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		MediaIn2 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		TransitionAnalog1 = TransitionAnalog {},
+		RedSolid1 = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 1, }, TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 0, }, TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		RedCh1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "RedSolid1", Source = "Output", },
+				ApplyMode = Input { Value = FuID { "Multiply", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		GreenSolid1 = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, }, TopLeftGreen = Input { Value = 1, },
+				TopLeftBlue = Input { Value = 0, }, TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		GreenCh1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "GreenSolid1", Source = "Output", },
+				ApplyMode = Input { Value = FuID { "Multiply", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		BlueSolid1 = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, }, TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 1, }, TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		BlueCh1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "BlueSolid1", Source = "Output", },
+				ApplyMode = Input { Value = FuID { "Multiply", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		RedShift1 = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "RedCh1", Source = "Output", },
+				XOffset = Input { SourceOp = "GlitchSpline", Source = "Value", },
+				YOffset = Input { Value = 0, },
+			},
+		},
+		BlueShift1 = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "BlueCh1", Source = "Output", },
+				XOffset = Input { SourceOp = "GlitchSplineNeg", Source = "Value", },
+				YOffset = Input { Value = 0, },
+			},
+		},
+		GlitchSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0, },
+				[3]  = { 0.018, Flags = { Linear = true }, },
+				[5]  = { -0.012, Flags = { Linear = true }, },
+				[7]  = { 0.022, Flags = { Linear = true }, },
+				[10] = { 0, },
+			},
+		},
+		GlitchSplineNeg = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0, },
+				[3]  = { -0.018, Flags = { Linear = true }, },
+				[5]  = { 0.012, Flags = { Linear = true }, },
+				[7]  = { -0.022, Flags = { Linear = true }, },
+				[10] = { 0, },
+			},
+		},
+		CombineRG1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "GreenCh1",   Source = "Output", },
+				Foreground = Input { SourceOp = "RedShift1",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		CombineRGB1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CombineRG1",  Source = "Output", },
+				Foreground = Input { SourceOp = "BlueShift1",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		Dissolve1 = Dissolve {
+			Inputs = {
+				Mix = Input { SourceOp = "TransitionAnalog1", Source = "Value", },
+				Background = Input { SourceOp = "CombineRGB1", Source = "Output", },
+				Foreground = Input { SourceOp = "MediaIn2",    Source = "Output", },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "Dissolve1", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

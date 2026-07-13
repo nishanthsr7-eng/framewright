@@ -1,0 +1,58 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			Inputs = {
+				GlobalIn = Input { Value = 0, },
+			},
+		},
+		MediaIn2 = MediaIn {
+			Inputs = {
+				GlobalIn = Input { Value = 0, },
+			},
+		},
+		TransitionAnalog1 = TransitionAnalog {},
+		BlackBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Type = Input { Value = 0, },
+				TopLeftRed   = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue  = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		DissolveOut = Dissolve {
+			Inputs = {
+				Mix = Input {
+					SourceOp = "TransitionAnalog1",
+					Source = "Value",
+				},
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "BlackBg", Source = "Output", },
+			},
+		},
+		DissolveIn = Dissolve {
+			Inputs = {
+				Mix = Input {
+					SourceOp = "TransitionAnalog1",
+					Source = "InverseValue",
+				},
+				Background = Input { SourceOp = "MediaIn2", Source = "Output", },
+				Foreground = Input { SourceOp = "BlackBg", Source = "Output", },
+			},
+		},
+		Merge1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "DissolveOut", Source = "Output", },
+				Foreground = Input { SourceOp = "DissolveIn", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "Merge1", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,49 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		BrightExtract = ColorCorrector {
+			Inputs = {
+				Input          = Input { SourceOp = "MediaIn1", Source = "Output", },
+				ContrastMaster = Input { Value = 4.0, },
+				BrightnessLow  = Input { Value = -0.6, },
+			},
+		},
+		RayBlurX = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "BrightExtract", Source = "Output", },
+				XBlurSize = Input { Value = 60, },
+				YBlurSize = Input { Value = 60, },
+			},
+		},
+		RayBlurX2 = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "RayBlurX", Source = "Output", },
+				XBlurSize = Input { Value = 60, },
+				YBlurSize = Input { Value = 60, },
+			},
+		},
+		RayTint = ColorCorrector {
+			Inputs = {
+				Input     = Input { SourceOp = "RayBlurX2", Source = "Output", },
+				GainRed   = Input { Value = 1.3, },
+				GainGreen = Input { Value = 1.1, },
+				GainBlue  = Input { Value = 0.7, },
+			},
+		},
+		RayMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "RayTint",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.7, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "RayMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,49 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			Inputs = {
+				GlobalIn = Input { Value = 0, },
+			},
+		},
+		MediaIn2 = MediaIn {
+			Inputs = {
+				GlobalIn = Input { Value = 0, },
+			},
+		},
+		TransitionAnalog1 = TransitionAnalog {},
+		BlurOut = Blur {
+			Inputs = {
+				XBlurSize = Input {
+					SourceOp = "TransitionAnalog1",
+					Source = "Value",
+				},
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+			},
+		},
+		BlurIn = Blur {
+			Inputs = {
+				XBlurSize = Input {
+					SourceOp = "TransitionAnalog1",
+					Source = "InverseValue",
+				},
+				Input = Input { SourceOp = "MediaIn2", Source = "Output", },
+			},
+		},
+		Dissolve1 = Dissolve {
+			Inputs = {
+				Mix = Input {
+					SourceOp = "TransitionAnalog1",
+					Source = "Value",
+				},
+				Background = Input { SourceOp = "BlurOut", Source = "Output", },
+				Foreground = Input { SourceOp = "BlurIn", Source = "Output", },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "Dissolve1", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,64 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		MediaIn2 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		TransitionAnalog1 = TransitionAnalog {},
+		MainDis = Dissolve {
+			Inputs = {
+				Mix        = Input { SourceOp = "TransitionAnalog1", Source = "Value", },
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "MediaIn2", Source = "Output", },
+			},
+		},
+		LeakBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 1.0, },
+				TopLeftGreen = Input { Value = 0.7, },
+				TopLeftBlue  = Input { Value = 0.2, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		LeakMove = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "LeakBg", Source = "Output", },
+				XOffset = Input { SourceOp = "LeakPath", Source = "Value", },
+			},
+		},
+		LeakPath = BezierSpline {
+			KeyFrames = {
+				[0]  = { -0.5, Flags = { Linear = true }, },
+				[20] = { 0.5,  Flags = { Linear = true }, },
+			},
+		},
+		LeakBlur = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "LeakMove", Source = "Output", },
+				XBlurSize = Input { Value = 80, },
+				YBlurSize = Input { Value = 50, },
+			},
+		},
+		LeakAlpha = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.0, Flags = { Linear = true }, },
+				[10] = { 0.7, Flags = { Linear = true }, },
+				[20] = { 0.0, Flags = { Linear = true }, },
+			},
+		},
+		LeakMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MainDis",  Source = "Output", },
+				Foreground = Input { SourceOp = "LeakBlur", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { SourceOp = "LeakAlpha", Source = "Value", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "LeakMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

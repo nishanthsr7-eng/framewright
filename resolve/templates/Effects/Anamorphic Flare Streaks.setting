@@ -1,0 +1,43 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		HiExtract = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+				ContrastMaster  = Input { Value = 3.0, },
+				BrightnessLow   = Input { Value = -0.5, },
+				BrightnessMid   = Input { Value = -0.3, },
+			},
+		},
+		HorizStreak = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "HiExtract", Source = "Output", },
+				XBlurSize = Input { Value = 140, },
+				YBlurSize = Input { Value = 0, },
+			},
+		},
+		BlueTint = ColorCorrector {
+			Inputs = {
+				Input     = Input { SourceOp = "HorizStreak", Source = "Output", },
+				GainRed   = Input { Value = 0.5, },
+				GainGreen = Input { Value = 0.7, },
+				GainBlue  = Input { Value = 1.8, },
+			},
+		},
+		FlareMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "BlueTint",  Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.75, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "FlareMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

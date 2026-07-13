@@ -1,0 +1,46 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		ParticleNoise = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 8, },
+				YScale     = Input { Value = 8, },
+				Contrast   = Input { Value = 5, },
+				Brightness = Input { Value = -0.2, },
+				Seethe     = Input { Value = 0.1, },
+				SeetheRate = Input { Value = 0.3, },
+			},
+		},
+		BokehBlur = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "ParticleNoise", Source = "Output", },
+				XBlurSize = Input { Value = 22, },
+				YBlurSize = Input { Value = 22, },
+			},
+		},
+		BokehTint = ColorCorrector {
+			Inputs = {
+				Input     = Input { SourceOp = "BokehBlur", Source = "Output", },
+				GainRed   = Input { Value = 1.4, },
+				GainGreen = Input { Value = 1.1, },
+				GainBlue  = Input { Value = 1.8, },
+			},
+		},
+		BokehMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1",  Source = "Output", },
+				Foreground = Input { SourceOp = "BokehTint", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.3, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "BokehMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,46 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		RainNoise = FastNoise {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				XScale     = Input { Value = 0.4, },
+				YScale     = Input { Value = 60, },
+				Contrast   = Input { Value = 8, },
+				Brightness = Input { Value = -0.3, },
+				Seethe     = Input { Value = 0.5, },
+				SeetheRate = Input { Value = 2.5, },
+			},
+		},
+		RainBlur = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "RainNoise", Source = "Output", },
+				XBlurSize = Input { Value = 0, },
+				YBlurSize = Input { Value = 4, },
+			},
+		},
+		RainTint = ColorCorrector {
+			Inputs = {
+				Input     = Input { SourceOp = "RainBlur", Source = "Output", },
+				GainRed   = Input { Value = 0.8, },
+				GainGreen = Input { Value = 0.9, },
+				GainBlue  = Input { Value = 1.2, },
+			},
+		},
+		RainMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "RainTint", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.35, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "RainMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

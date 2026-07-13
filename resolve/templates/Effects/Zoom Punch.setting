@@ -1,0 +1,26 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		ZoomTransform = Transform {
+			Inputs = {
+				Input  = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Size   = Input { SourceOp = "ZoomSpline", Source = "Value", },
+			},
+		},
+		ZoomSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 1.00, },
+				[4]  = { 1.18, Flags = { Linear = true }, },
+				[8]  = { 1.12, Flags = { Linear = true }, },
+				[12] = { 1.15, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "ZoomTransform", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

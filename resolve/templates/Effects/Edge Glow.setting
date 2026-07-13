@@ -1,0 +1,51 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		BlurredCopy = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "MediaIn1", Source = "Output", },
+				XBlurSize = Input { Value = 3, },
+				YBlurSize = Input { Value = 3, },
+			},
+		},
+		EdgeExtract = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "BlurredCopy", Source = "Output", },
+				Foreground = Input { SourceOp = "MediaIn1",    Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Difference", }, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		EdgeBright = ColorCorrector {
+			Inputs = {
+				Input         = Input { SourceOp = "EdgeExtract", Source = "Output", },
+				MasterRGBGain = Input { Value = 6.0, },
+				GainRed       = Input { Value = 0.6, },
+				GainGreen     = Input { Value = 1.2, },
+				GainBlue      = Input { Value = 0.9, },
+			},
+		},
+		EdgeGlowBlur = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "EdgeBright", Source = "Output", },
+				XBlurSize = Input { Value = 6, },
+				YBlurSize = Input { Value = 6, },
+			},
+		},
+		GlowMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1",    Source = "Output", },
+				Foreground = Input { SourceOp = "EdgeGlowBlur", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.85, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "GlowMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

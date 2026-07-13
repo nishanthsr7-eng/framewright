@@ -1,0 +1,27 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		FlippedCopy = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "MediaIn1", Source = "Output", },
+				XOffset = Input { Value = 0, },
+				YOffset = Input { Value = 0, },
+				Size    = Input { Value = -1, },
+			},
+		},
+		MirrorBlend = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1",   Source = "Output", },
+				Foreground = Input { SourceOp = "FlippedCopy", Source = "Output", },
+				Blend      = Input { Value = 0.5, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MirrorBlend", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

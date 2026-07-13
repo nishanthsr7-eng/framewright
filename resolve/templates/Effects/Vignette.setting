@@ -1,0 +1,46 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			Inputs = {
+				GlobalIn = Input { Value = 0, },
+			},
+		},
+		EllipseMask1 = EllipseMask {
+			Inputs = {
+				Width = Input { Value = 0.78, },
+				Height = Input { Value = 0.78, },
+				SoftEdge = Input { Value = 0.42, },
+			},
+		},
+		BgDark = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Type = Input { Value = 0, },
+				TopLeftRed   = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue  = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 0.6, },
+			},
+		},
+		MaskApply = MatteControl {
+			Inputs = {
+				Garbage = Input { SourceOp = "EllipseMask1", Source = "Mask", },
+				Background = Input { SourceOp = "BgDark", Source = "Output", },
+				InvertGarbage = Input { Value = 1, },
+			},
+		},
+		MergeVig = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "MaskApply", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeVig", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

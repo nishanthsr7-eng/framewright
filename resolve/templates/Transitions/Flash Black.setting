@@ -1,0 +1,51 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		MediaIn2 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		BlackBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue  = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		Clip1Out = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "BlackBg",    Source = "Output", },
+				Foreground = Input { SourceOp = "MediaIn1",   Source = "Output", },
+				Blend = Input { SourceOp = "Clip1Spline",  Source = "Value", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		Clip1Spline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 1, Flags = { Linear = true }, },
+				[5]  = { 0, Flags = { Linear = true }, },
+				[20] = { 0, },
+			},
+		},
+		Clip2In = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "Clip1Out",  Source = "Output", },
+				Foreground = Input { SourceOp = "MediaIn2",  Source = "Output", },
+				Blend = Input { SourceOp = "Clip2Spline", Source = "Value", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		Clip2Spline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0, },
+				[15] = { 0, Flags = { Linear = true }, },
+				[20] = { 1, Flags = { Linear = true }, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "Clip2In", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

@@ -1,0 +1,66 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		MediaIn2 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		TransitionAnalog1 = TransitionAnalog {},
+		WipeBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed   = Input { Value = 1.0, },
+				TopLeftGreen = Input { Value = 0.55, },
+				TopLeftBlue  = Input { Value = 0.0, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		WipeMask = RectangleMask {
+			Inputs = {
+				Width    = Input { Value = 2.0, },
+				Height   = Input { Value = 2.0, },
+				SoftEdge = Input { Value = 0.0, },
+				Center   = Input { SourceOp = "WipePath", Source = "Value", },
+			},
+		},
+		WipePath = Path {
+			Points = {
+				[0]  = { -0.6, 0.5, },
+				[20] = { 1.6,  0.5, },
+			},
+		},
+		WipeColor = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "WipeBg",   Source = "Output", },
+				Mask       = Input { SourceOp = "WipeMask", Source = "Mask", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		RevealMask = RectangleMask {
+			Inputs = {
+				Width    = Input { Value = 2.0, },
+				Height   = Input { Value = 2.0, },
+				SoftEdge = Input { Value = 0.0, },
+				Center   = Input { SourceOp = "RevealPath", Source = "Value", },
+			},
+		},
+		RevealPath = Path {
+			Points = {
+				[0]  = { -1.2, 0.5, },
+				[20] = { 0.8,  0.5, },
+			},
+		},
+		RevealIn2 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "WipeColor",  Source = "Output", },
+				Foreground = Input { SourceOp = "MediaIn2",   Source = "Output", },
+				Mask       = Input { SourceOp = "RevealMask", Source = "Mask", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "RevealIn2", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

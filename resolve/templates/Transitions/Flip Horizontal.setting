@@ -1,0 +1,76 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		MediaIn2 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		TransitionAnalog1 = TransitionAnalog {},
+		BlackBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, }, TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 0, }, TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		FlipOut = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Size    = Input { SourceOp = "FlipOutSize", Source = "Value", },
+				XOffset = Input { SourceOp = "FlipOutX",   Source = "Value", },
+			},
+		},
+		FlipOutSize = BezierSpline {
+			KeyFrames = {
+				[0]  = { 1.0,  Flags = { Linear = true }, },
+				[10] = { 0.02, Flags = { Linear = true }, },
+				[20] = { 0.02, },
+			},
+		},
+		FlipOutX = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.0,  Flags = { Linear = true }, },
+				[10] = { 0.3,  Flags = { Linear = true }, },
+				[20] = { 0.6, },
+			},
+		},
+		FlipIn = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "MediaIn2", Source = "Output", },
+				Size    = Input { SourceOp = "FlipInSize", Source = "Value", },
+				XOffset = Input { SourceOp = "FlipInX",   Source = "Value", },
+			},
+		},
+		FlipInSize = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.02, },
+				[10] = { 0.02, Flags = { Linear = true }, },
+				[20] = { 1.0,  Flags = { Linear = true }, },
+			},
+		},
+		FlipInX = BezierSpline {
+			KeyFrames = {
+				[0]  = { -0.6, },
+				[10] = { -0.3, Flags = { Linear = true }, },
+				[20] = { 0.0,  Flags = { Linear = true }, },
+			},
+		},
+		MergeBase = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "BlackBg",  Source = "Output", },
+				Foreground = Input { SourceOp = "FlipOut",  Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeFinal = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeBase", Source = "Output", },
+				Foreground = Input { SourceOp = "FlipIn",    Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeFinal", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

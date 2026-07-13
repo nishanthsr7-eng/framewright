@@ -1,0 +1,40 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		MediaIn2 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		TransitionAnalog1 = TransitionAnalog {},
+		IrisMask = EllipseMask {
+			Inputs = {
+				Width    = Input { SourceOp = "IrisSpline", Source = "Value", },
+				Height   = Input { SourceOp = "IrisSpline", Source = "Value", },
+				SoftEdge = Input { Value = 0.02, },
+				Center   = Input { Value = { 0.5, 0.5 }, },
+			},
+		},
+		IrisSpline = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.0, Flags = { Linear = true }, },
+				[20] = { 1.6, Flags = { Linear = true }, },
+			},
+		},
+		MaskedIn2 = MatteControl {
+			Inputs = {
+				Input = Input { SourceOp = "MediaIn2", Source = "Output", },
+				Mask  = Input { SourceOp = "IrisMask", Source = "Mask", },
+			},
+		},
+		MergeFinal = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1",  Source = "Output", },
+				Foreground = Input { SourceOp = "MaskedIn2", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeFinal", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

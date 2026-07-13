@@ -1,0 +1,25 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		PixSmall = Transform {
+			Inputs = {
+				Input  = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Size   = Input { Value = 0.06, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+			},
+		},
+		PixLarge = Transform {
+			Inputs = {
+				Input  = Input { SourceOp = "PixSmall", Source = "Output", },
+				Size   = Input { Value = 16.67, },
+				Center = Input { Value = { 0.5, 0.5 }, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "PixLarge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

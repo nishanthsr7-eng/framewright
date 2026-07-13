@@ -1,0 +1,60 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		MediaIn2 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		TransitionAnalog1 = TransitionAnalog {},
+		BlackBg = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, }, TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 0, }, TopLeftAlpha = Input { Value = 1, },
+			},
+		},
+		PushOut = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "MediaIn1", Source = "Output", },
+				XOffset = Input { SourceOp = "PushOutX", Source = "Value", },
+				YOffset = Input { Value = 0, },
+			},
+		},
+		PushOutX = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.0, Flags = { Linear = true }, },
+				[20] = { -0.58, Flags = { Linear = true }, },
+			},
+		},
+		PushIn = Transform {
+			Inputs = {
+				Input   = Input { SourceOp = "MediaIn2", Source = "Output", },
+				XOffset = Input { SourceOp = "PushInX", Source = "Value", },
+				YOffset = Input { Value = 0, },
+			},
+		},
+		PushInX = BezierSpline {
+			KeyFrames = {
+				[0]  = { 0.58, Flags = { Linear = true }, },
+				[20] = { 0.0, Flags = { Linear = true }, },
+			},
+		},
+		MergeBase = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "BlackBg",  Source = "Output", },
+				Foreground = Input { SourceOp = "PushOut",  Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MergeFinal = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MergeBase", Source = "Output", },
+				Foreground = Input { SourceOp = "PushIn",    Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "MergeFinal", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

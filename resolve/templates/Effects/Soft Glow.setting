@@ -1,0 +1,30 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			Inputs = {
+				GlobalIn = Input { Value = 0, },
+			},
+		},
+		Blur1 = Blur {
+			Inputs = {
+				XBlurSize = Input { Value = 12, },
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+			},
+		},
+		GlowMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "Blur1", Source = "Output", },
+				ApplyMode = Input { Value = "Screen", },
+				Blend = Input { Value = 0.4, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "GlowMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}

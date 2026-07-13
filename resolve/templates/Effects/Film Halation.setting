@@ -1,0 +1,44 @@
+{
+	Tools = ordered() {
+		MediaIn1 = MediaIn { Inputs = { GlobalIn = Input { Value = 0, }, }, },
+		HiExtract = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+				BrightnessLow   = Input { Value = -0.6, },
+				BrightnessMid   = Input { Value = -0.2, },
+				ContrastMaster  = Input { Value = 2.0, },
+			},
+		},
+		HaloBlur = Blur {
+			Inputs = {
+				Input     = Input { SourceOp = "HiExtract", Source = "Output", },
+				XBlurSize = Input { Value = 35, },
+				YBlurSize = Input { Value = 35, },
+			},
+		},
+		HaloTint = ColorCorrector {
+			Inputs = {
+				Input = Input { SourceOp = "HaloBlur", Source = "Output", },
+				MasterRGBGain = Input { Value = 1.2, },
+				GainRed       = Input { Value = 1.4, },
+				GainGreen     = Input { Value = 0.8, },
+				GainBlue      = Input { Value = 0.5, },
+			},
+		},
+		HaloMerge = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "HaloTint", Source = "Output", },
+				ApplyMode  = Input { Value = FuID { "Screen", }, },
+				Blend      = Input { Value = 0.65, },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "HaloMerge", Source = "Output", },
+			},
+		},
+	},
+	ActiveTool = "MediaOut1",
+}
