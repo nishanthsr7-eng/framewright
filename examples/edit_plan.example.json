@@ -1,0 +1,32 @@
+{
+  "version": "0.1",
+  "project": { "name": "beat_edit_example", "width": 1920, "height": 1080, "fps": 24 },
+  "music": { "file": "input/music.mp3", "start": 0.0, "gain_db": 0 },
+  "beat_grid": {
+    "bpm": 120.0,
+    "beats": [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0],
+    "downbeats": [0.5, 2.5, 4.5, 6.5],
+    "sections": [
+      { "label": "intro", "start": 0.0, "end": 4.5 },
+      { "label": "drop", "start": 4.5, "end": 8.5 }
+    ]
+  },
+  "clips": [
+    { "file": "input/clip_a.mp4", "in": 3.0, "out": 5.0, "track": 1, "at": 0.5, "speed": 1.0 },
+    { "file": "input/clip_b.mp4", "in": 10.0, "out": 12.0, "track": 1, "at": 2.5, "speed": 1.0,
+      "transition_in": { "type": "Cross Blur", "frames": 12 } },
+    { "file": "input/clip_c.mp4", "in": 0.0, "out": 1.0, "track": 1, "at": 4.5, "speed": 1.0,
+      "transition_in": { "type": "Flash White", "frames": 12 },
+      "effects": ["Screen Shake", "Chromatic Aberration"] },
+    { "file": "input/clip_a.mp4", "in": 8.0, "out": 9.0, "track": 1, "at": 5.5, "speed": 0.5 },
+    { "file": "input/clip_b.mp4", "in": 20.0, "out": 21.0, "track": 1, "at": 7.5, "speed": 1.0,
+      "transition_in": { "type": "Flash Black", "frames": 8 } }
+  ],
+  "titles": [
+    { "text": "THE DROP", "at": 4.5, "duration": 1.5, "track": 2, "template": "Center Title" }
+  ],
+  "markers": [
+    { "at": 0.5, "color": "Blue", "name": "intro" },
+    { "at": 4.5, "color": "Red", "name": "drop" }
+  ]
+}
