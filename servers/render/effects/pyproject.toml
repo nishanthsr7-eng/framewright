@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "为视频片段应用\"剪辑风格\"特效(变焦冲击、震动、RGB分离、闪光、Vignette、光晕、噪点、调色、变速)和转场(xfade)"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
+dependencies = ["framewright-core", 
     "mcp[cli]>=1.6.0"
 ]
 
@@ -19,3 +19,6 @@ effects-mcp = "effects_mcp.server:main"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.uv.sources]
+framewright-core = { workspace = true }

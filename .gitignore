@@ -28,3 +28,14 @@ desktop.ini
 .DS_Store
 .vscode/
 .idea/
+
+samples/
+
+# eval fixtures (regenerate with evals/make_fixtures.py)
+evals/fixtures/
+
+# hand-labeled frames from samples/ (not redistributable)
+evals/labels/
+
+# local secrets
+.env

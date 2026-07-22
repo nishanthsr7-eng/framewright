@@ -1,0 +1,39 @@
+[project]
+name = "framewright"
+version = "0.1.0"
+description = "AI-assisted video editing over MCP"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["servers/core", "servers/analysis/*", "servers/assets/*", "servers/render/*"]
+
+[tool.uv.sources]
+framewright-core = { workspace = true }
+
+[dependency-groups]
+dev = ["ruff>=0.6", "pyright>=1.1.380", "pytest>=8", "pre-commit>=3.8"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = ["models", "input", "output", "resolve/templates"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+# Style-only rules the existing code base does not follow yet.
+ignore = ["E501", "E702", "E731", "E741", "W293", "B006", "B007", "B904", "B905"]
+
+[tool.pyright]
+include = ["servers", "resolve/bridge", "evals", "scripts"]
+exclude = ["**/.venv", "**/__pycache__", "models", "output"]
+typeCheckingMode = "basic"
+reportMissingImports = "warning"
+reportMissingModuleSource = "none"
+
+[tool.pytest.ini_options]
+testpaths = ["resolve/bridge", "servers", "tests"]
+addopts = "-q"

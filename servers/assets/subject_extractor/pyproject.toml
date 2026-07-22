@@ -4,9 +4,11 @@ version = "0.1.0"
 description = "Foreground subject extraction (anime or general footage) with ISNet / U2-Net ONNX models"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
+dependencies = ["framewright-core", 
     "mcp[cli]>=1.6.0",
-    "onnxruntime>=1.17.0,<1.20",
+    "onnxruntime>=1.17.0,<1.23; sys_platform == 'darwin'",
+    "onnxruntime-gpu[cuda,cudnn]>=1.23.0,<1.24; sys_platform != 'darwin'",
+    "nvidia-cudnn-cu12>=9.10,<9.11; sys_platform != 'darwin'",  # newer cuDNN fails on RTX 50xx with ORT 1.23
     "numpy>=1.24.0",
     "pillow>=10.0.0"
 ]
@@ -22,3 +24,6 @@ subject-extractor-mcp = "subject_extractor_mcp.server:main"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.uv.sources]
+framewright-core = { workspace = true }
