@@ -1,4 +1,6 @@
 import json
+
+
 class StreamDisposition:
     def __init__(self, disposition):
         self.default = disposition.get("default", 0)
@@ -105,5 +107,5 @@ class FormatContext:
         for stream in streams:
             if stream["codec_type"] == "audio":
                 self.audio_streams.append(AudioStream(stream))
-            elif stream["codec_type"] == "video": 
+            elif stream["codec_type"] == "video":
                 self.video_streams.append(VideoStream(stream))

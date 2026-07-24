@@ -1,19 +1,21 @@
-import subprocess
-import shlex
-import sys
-import threading
 import os
 import platform
+import shlex
 import shutil
-import ffmpeg_mcp.utils as utils
+import subprocess
+import sys
+import threading
+
 import ffmpeg_mcp.typedef as typedef
+
+
 def check_os_architecture():
     # 获取当前操作系统
     system = platform.system()
     # 获取处理器架构
     machine = platform.machine()
     return system, machine
-        
+
 def run_command(command, timeout=300):
     """
     运行FFmpeg命令并捕获相关信息。
@@ -76,8 +78,8 @@ def run_command(command, timeout=300):
         if thread is not None:
             thread.join()  #
         logs.append(append_msg)
-        return return_code, '\n'.join(logs), append_msg
-    
+    return return_code, '\n'.join(logs), append_msg
+
 def is_file_and_exists(file_path):
     return os.path.isfile(file_path) and os.path.exists(file_path)
 
@@ -125,7 +127,7 @@ def run_ffplay(cmd, timeout = 60):
         logs.append(append_msg)
         return code,cmd,'\n'.join(logs)
     return code, cmd, log
-    
+
 def media_format_ctx(path):
     cmd = f" -show_streams -of json -v error -i {shlex.quote(path)}"
     code, cmd, log = run_ffprobe(cmd)

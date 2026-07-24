@@ -1,24 +1,10 @@
 import json
 import os
 import subprocess
+from functools import partial
 
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
+from framewright_core import output_root as _get_output_root
+from framewright_core import run_ffmpeg
 
 
 def _probe(path):
@@ -28,7 +14,7 @@ def _probe(path):
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"ffprobe 失败: {result.stderr[-1000:]}")
+        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
     data = json.loads(result.stdout)
     has_video = any(s["codec_type"] == "video" for s in data["streams"])
     has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
@@ -36,12 +22,7 @@ def _probe(path):
     return {"has_video": has_video, "has_audio": has_audio, "duration": duration}
 
 
-def _run_ffmpeg(args, timeout=900):
-    cmd = ["ffmpeg", "-y"] + args
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg 失败: {result.stderr[-1500:]}")
-    return result.stderr
+_run_ffmpeg = partial(run_ffmpeg, timeout=900)
 
 
 def _default_output_path(input_path, suffix, ext=None):
@@ -65,11 +46,11 @@ def normalize_loudness(input_path, target_lufs=-14.0, output_path=None):
     达到目标 LUFS(常见目标: -14 适合 YouTube/流媒体, -16 适合播客, -23 适合广播)。
     """
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f"找不到文件: {input_path}")
+        raise FileNotFoundError(f"File not found: {input_path}")
 
     info = _probe(input_path)
     if not info["has_audio"]:
-        raise RuntimeError(f"文件没有音轨: {input_path}")
+        raise RuntimeError(f"File has no audio track: {input_path}")
 
     out = _make_output_path(output_path, input_path, "normalized")
     af = f"loudnorm=I={target_lufs}:TP=-1.5:LRA=11"
@@ -90,11 +71,11 @@ def reduce_noise(input_path, amount=12, output_path=None):
     amount: 降噪强度(dB)，范围约 0.01~97，默认 12，越大降噪越强但可能损失细节。
     """
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f"找不到文件: {input_path}")
+        raise FileNotFoundError(f"File not found: {input_path}")
 
     info = _probe(input_path)
     if not info["has_audio"]:
-        raise RuntimeError(f"文件没有音轨: {input_path}")
+        raise RuntimeError(f"File has no audio track: {input_path}")
 
     out = _make_output_path(output_path, input_path, "denoised")
     af = f"afftdn=nr={amount}"
@@ -120,13 +101,13 @@ def add_background_music(video_path, music_path, music_volume_db=-20.0, duck=Tru
     loop: 若背景音乐比视频短，是否循环播放以覆盖整段视频，默认 True。
     """
     if not os.path.exists(video_path):
-        raise FileNotFoundError(f"找不到文件: {video_path}")
+        raise FileNotFoundError(f"File not found: {video_path}")
     if not os.path.exists(music_path):
-        raise FileNotFoundError(f"找不到文件: {music_path}")
+        raise FileNotFoundError(f"File not found: {music_path}")
 
     video_info = _probe(video_path)
     if not video_info["has_video"]:
-        raise RuntimeError(f"不是视频文件: {video_path}")
+        raise RuntimeError(f"Not a video file: {video_path}")
 
     out = _make_output_path(output_path, video_path, "with_music")
 

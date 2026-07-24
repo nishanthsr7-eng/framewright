@@ -1,26 +1,12 @@
 import json
 import os
 import subprocess
+from functools import partial
+
+from framewright_core import output_root as _get_output_root
+from framewright_core import run_ffmpeg
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".tif", ".tiff"}
-
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
 
 
 def _probe(path):
@@ -30,7 +16,7 @@ def _probe(path):
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"ffprobe 失败: {result.stderr[-1000:]}")
+        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
     data = json.loads(result.stdout)
     vstream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
     has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
@@ -44,11 +30,16 @@ def _probe(path):
     return {"width": width, "height": height, "duration": duration, "has_audio": has_audio}
 
 
-def _run_ffmpeg(args, timeout=900):
-    cmd = ["ffmpeg", "-y"] + args
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg 失败: {result.stderr[-1500:]}")
+_run_ffmpeg = partial(run_ffmpeg, timeout=900)
+
+
+def _video_codec(path):
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name",
+         "-of", "csv=p=0", path],
+        capture_output=True, text=True, timeout=60,
+    )
+    return result.stdout.strip()
 
 
 def _is_image(path):
@@ -78,9 +69,9 @@ def compose_layers(base_video, layers, output_path=None):
         (从 start_time 开始)与主视频音频混合。
     """
     if not os.path.exists(base_video):
-        raise FileNotFoundError(f"找不到文件: {base_video}")
+        raise FileNotFoundError(f"File not found: {base_video}")
     if not layers:
-        raise ValueError("layers 不能为空")
+        raise ValueError("layers is empty")
 
     base_info = _probe(base_video)
     total = base_info["duration"]
@@ -97,13 +88,13 @@ def compose_layers(base_video, layers, output_path=None):
         idx = i + 1
         file_path = layer["file"]
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f"找不到层文件: {file_path}")
+            raise FileNotFoundError(f"Layer file not found: {file_path}")
 
         start = max(0.0, float(layer.get("start_time", 0.0)))
         end = float(layer["end_time"]) if layer.get("end_time") is not None else total
         end = min(end, total)
         if end <= start:
-            raise ValueError(f"layer {i}: end_time 必须大于 start_time")
+            raise ValueError(f"layer {i}: end_time must be greater than start_time")
         layer_dur = end - start
 
         is_image = _is_image(file_path)
@@ -111,7 +102,10 @@ def compose_layers(base_video, layers, output_path=None):
             input_args += ["-loop", "1", "-t", f"{layer_dur}", "-i", file_path]
             chain = [f"[{idx}:v]format=rgba"]
         else:
-            input_args += ["-i", file_path]
+            # ffmpeg's native VP9 decoder drops alpha; libvpx keeps it (overlay.webm, subject.webm)
+            codec = _video_codec(file_path)
+            decoder = {"vp9": ["-c:v", "libvpx-vp9"], "vp8": ["-c:v", "libvpx"]}.get(codec, [])
+            input_args += decoder + ["-i", file_path]
             chain = [f"[{idx}:v]trim=duration={layer_dur},setpts=PTS-STARTPTS,format=rgba"]
 
         width = layer.get("width")

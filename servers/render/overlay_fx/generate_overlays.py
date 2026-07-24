@@ -2,6 +2,7 @@
 src/overlay_fx_mcp/assets/. Run with: python generate_overlays.py
 """
 import os
+
 import numpy as np
 from PIL import Image
 

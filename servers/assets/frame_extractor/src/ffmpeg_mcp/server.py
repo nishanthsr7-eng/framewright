@@ -1,174 +1,152 @@
-# server.py
+import json
 import os
 import sys
+from typing import Annotated, Literal
+
+from pydantic import Field
 
 if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-cur_path=os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, cur_path+"/..")
-from typing import List
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+from framewright_core import setup_logging
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
+
 import ffmpeg_mcp.cut_video as cut_video
 
-
-
-# Create an MCP server
+setup_logging()
 mcp = FastMCP("frame-extractor-mcp")
 
-# Add an addition tool
-@mcp.tool()
-def find_video_path(root_path, video_name):
-    """
-    可以查找视频文件路径，查找文件路径，递归查找精确匹配文件名的视频文件路径（支持带或不带扩展名）
-    参数：
-    root_path - 要搜索的根目录
-    video_name - 视频文件名（可以带扩展名，但会忽略扩展名匹配）
-    返回：
-    首个匹配的视频文件完整路径，找不到时返回空字符串
-    """
-    VIDEO_EXTS = {'.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm', '.ts'}
-    target_stem, target_ext = os.path.splitext(video_name)
-    if target_ext.lower() not in VIDEO_EXTS:
-        target_stem = f"{target_stem}{target_ext}"
-        target_ext = ""
+VideoPath = Annotated[str, Field(description="Source video file")]
+Time = Annotated[float | str | None, Field(description="Seconds, or 'MM:SS' / 'HH:MM:SS'")]
+IMG_FORMATS = {"png": 0, "jpg": 1, "webp": 2}
 
-    for root, dirs, files in os.walk(root_path):
-        for file in files:
-            stem, ext = os.path.splitext(file)
-            if stem.lower() == target_stem.lower():
-                if (not target_ext or ext.lower() in VIDEO_EXTS):
-                    return os.path.join(root, file)
-    return ""
 
-@mcp.tool()
-def clip_video(video_path, start=None, end=None,duration = None, output_path=None,time_out=300):
-    """
-    智能视频剪辑函数
-    
-    参数：
-    video_path : str - 源视频文件路径
-    start : int/float/str - 开始时间（支持秒数、MM:SS、HH:MM:SS格式,默认为视频开头,如果不传该参数，或者该参数为负数，从视频结尾往前剪辑）
-    end : int/float/str - 结束时间（同上，默认为视频结尾）
-    duration:  int/float/str - 裁剪时长，end和duration必须有一个
-    output_path: str - 裁剪后视频输出路径，如果不传入，会有一个默认的输出路径
-    time_out: int - 命令行执行超时时间，默认为300s
-    返回：
-    error - 错误码
-    str - ffmpeg执行过程中所有日志
-    str - 生成的剪辑文件路径
-    示例：
-    clip_video("input.mp4", "00:01:30", "02:30")
-    """
-    return cut_video.clip_video_ffmpeg(video_path,start=start,end=end,duration=duration, output_path=output_path,time_out=time_out)   
+def _need_file(path: str) -> None:
+    if not os.path.isfile(path):
+        raise ToolError(f"File not found: {path}. Check the path exists.")
 
-@mcp.tool()
-def concat_videos(input_files: List[str], output_path: str = None, 
-                      fast: bool = True):
-    """
-    使用FFmpeg拼接多个视频文件
-    
-    参数:
-    input_files (List[str]): 输入视频文件路径列表
-    output_path (str): 合并后的输出文件路径,如果不传入，会一个默认的输出路径
-    fast (bool): 拼接方法，可选值："True"（默认，要求所有视频必须具有相同的编码格式、分辨率、帧率等参数）| "False(当不确定合并的视频编码格式、分辨率、帧率等参数是否相同的情况下，这个参数应该是False)"
-    
-    返回:
-    执行日志
-    
-    注意:
-    1. 当fast=True时，要求所有视频必须具有相同的编码格式、分辨率、帧率等参数
-    2. 推荐视频文件使用相同编码参数，避免拼接失败
-    3. 输出文件格式由output_path后缀决定（如.mp4/.mkv）
-    """
-    return cut_video.concat_videos(input_files,output_path,fast)
 
-@mcp.tool()
-def get_video_info(video_path: str):
-    """
-    获取视频信息，包括时长，帧率，codec等
-    
-    参数:
-    video_path (str): 输入视频文件路径
-    返回:
-    视频详细信息
-    """
-    return cut_video.get_video_info(video_path)
-
-@mcp.tool()
-def play_video(video_path, speed = 1, loop = 1):
-    """
-    使用 ffplay 播放视频文件，支持mkv,mp4,mov,avi,3gp等等
-
-    参数：
-    video_path(str) - 视频文件的路径。
-    speed(float) - 浮点型,播放速率,建议0.5-2之间。
-    loop(int) - 整形,是否循环播放,1:不循环,播放后就退出,0: 循环播放。
-    """
-    return cut_video.video_play(video_path,speed=speed,loop=loop)
+def _check(result: dict, what: str) -> dict:
+    """Turn the vendored {code, output_path, log_tail|error} shape into a result or a ToolError."""
+    if result.get("code", 0) != 0 or result.get("error"):
+        detail = result.get("error") or result.get("log_tail", "")[-600:]
+        raise ToolError(f"{what} failed: {detail}")
+    return {"output_path": result["output_path"]}
 
 
 @mcp.tool()
-def overlay_video(background_video, overlay_video, output_path: str = None, position: int = 1,  dx = 0, dy = 0):
-    """
-    两个视频叠加，注意不是拼接长度，而是画中画效果
+def clip_video(
+    video_path: VideoPath,
+    start: Time = None,
+    end: Time = None,
+    duration: Time = None,
+    output_path: Annotated[str | None, Field(description="Default: '<video>_clip.<ext>' next to the source")] = None,
+) -> dict:
+    """Cut a time range out of a video. Give end or duration; start defaults to 0."""
+    _need_file(video_path)
+    if end is None and duration is not None and start is None:
+        start = 0
+    try:
+        result = cut_video.clip_video_ffmpeg(video_path, start=start, end=end, duration=duration,
+                                             output_path=output_path, time_out=600)
+    except ValueError as e:
+        raise ToolError(f"Bad time value: {e}. Use seconds or 'MM:SS' / 'HH:MM:SS'.")
+    return _check(result, "Clip")
 
-    参数：
-    background_video(str) - 背景视频文件的路径。
-    overlay_video(str) - 前景视频文件路径。
-    output_path(str) - 输出路径
-    position(enum) - 相对位置，TopLeft=1: 左上角,TopCenter=2: 上居中, TopRight=3: 右上角 RightCenter=4: 右居中 BottomRight=5: 右下角 BottomCenter=6: 下居中 BottomLeft=7: 左下角 LeftCenter=8: 左居中 Center=9: 居中
-    dx(int) - 整形,前景视频坐标x偏移值
-    dy(int) - 整形,前景视频坐标y偏移值
-    """
-    return cut_video.overlay_video(background_video, overlay_video, output_path,position, dx, dy)
-       
-@mcp.tool()   
-def scale_video(video_path, width, height,output_path: str = None):
-    """
-    视频缩放
-
-    参数：
-    width(int) - 目标宽度。
-    height(int) - 目标高度。
-    output_path(str) - 输出路径
-    """ 
-    return cut_video.scale_video(video_path, width, height, output_path)
-
-@mcp.tool()   
-def extract_frames_from_video(video_path,fps=0, output_folder=None, format=0, total_frames=0):
-    """
-    提取视频中的图像。
-
-    参数：
-    video_path(str) - 视频路径。
-    fps(int) - 每多少秒抽一帧，如果传0，代表全部都抽,传1，代表每一秒抽1帧。
-    output_folder(str) - 把图片输出到哪个目录
-    format(int) - 抽取的图片格式，0：代表png 1:jpg 2:webp
-    total_frames(int) - 最多抽取多少张，0代表不限制
-    """ 
-    return cut_video.extract_frames_from_video(video_path, fps, output_folder, format, total_frames)
 
 @mcp.tool()
-def enhance_frames(input_folder, output_folder=None, model="realesrgan-x4plus", scale=4, format=0, in_place=False):
-    """
-    使用 Real-ESRGAN (ncnn-vulkan) 对图像帧文件夹进行超分辨率增强（提升画质/分辨率），常用于提升 extract_frames_from_video 提取出的动漫帧质量。
+def concat_videos(
+    input_files: Annotated[list[str], Field(min_length=2, description="Videos to join, in order")],
+    output_path: Annotated[str | None, Field(description="Output file; its extension sets the container")] = None,
+    fast: Annotated[bool, Field(description="Stream copy; only when all inputs share codec, size and frame rate")] = False,
+) -> dict:
+    """Join videos end to end."""
+    for f in input_files:
+        _need_file(f)
+    output_path = output_path or os.path.splitext(input_files[0])[0] + "_concat.mp4"
+    code, log = cut_video.concat_videos(input_files, output_path, fast)
+    if code != 0:
+        hint = " Retry with fast=false." if fast else ""
+        raise ToolError(f"Concat failed: {log[-600:]}{hint}")
+    return {"output_path": output_path}
 
-    参数：
-    input_folder(str) - 输入图像文件夹路径（通常是 extract_frames_from_video 的输出目录）
-    output_folder(str) - 输出图像文件夹路径，不传则默认为 "<input_folder>_enhanced"
-    model(str) - 使用的模型名称：
-        realesrgan-x4plus (general / live-action, default)
-        realesrgan-x4plus-anime (anime / illustration)
-        realesr-animevideov3 (动漫视频专用，速度更快)
-    scale(int) - 放大倍数，2/3/4，默认4
-    format(int) - 输出图片格式，0:png 1:jpg 2:webp
-    in_place(bool) - True时直接用增强后的图片覆盖 input_folder 中的原始帧（忽略 output_folder）
-    """
-    return cut_video.enhance_frames(input_folder, output_folder, model, scale, format, in_place)
+
+@mcp.tool()
+def get_video_info(video_path: VideoPath) -> dict:
+    """Stream details from ffprobe: codec, width, height, frame rate, duration."""
+    _need_file(video_path)
+    code, _cmd, log = cut_video.get_video_info(video_path)
+    if code != 0:
+        raise ToolError(f"ffprobe failed: {log[-600:]}")
+    try:
+        streams = json.loads(log).get("streams", [])
+    except json.JSONDecodeError:
+        raise ToolError("ffprobe returned unreadable output")
+    keep = ("index", "codec_type", "codec_name", "width", "height", "r_frame_rate", "duration",
+            "sample_rate", "channels", "pix_fmt", "bit_rate")
+    return {"video_path": video_path, "streams": [{k: s[k] for k in keep if k in s} for s in streams]}
+
+
+@mcp.tool()
+def scale_video(
+    video_path: VideoPath,
+    width: Annotated[int, Field(gt=0, description="Target width in pixels")],
+    height: Annotated[int, Field(description="Target height in pixels; -2 keeps aspect ratio")] = -2,
+    output_path: Annotated[str | None, Field(description="Default: next to the source")] = None,
+) -> dict:
+    """Resize a video."""
+    _need_file(video_path)
+    if height <= 0 and height != -2:
+        raise ToolError("height must be positive, or -2 to keep the aspect ratio")
+    return _check(cut_video.scale_video(video_path, width, height, output_path), "Scale")
+
+
+@mcp.tool()
+def extract_frames_from_video(
+    video_path: VideoPath,
+    every_seconds: Annotated[float, Field(ge=0, description="Grab one frame every N seconds; 0 grabs every frame")] = 0,
+    output_folder: Annotated[str | None, Field(description="Default: output/<video>/")] = None,
+    format: Annotated[Literal["png", "jpg", "webp"], Field(description="Image format")] = "png",
+    max_frames: Annotated[int, Field(ge=0, description="Stop after N frames; 0 means no limit")] = 0,
+) -> dict:
+    """Save video frames as numbered images (frame_0001.png, ...)."""
+    _need_file(video_path)
+    result = _check(cut_video.extract_frames_from_video(video_path, every_seconds, output_folder,
+                                                         IMG_FORMATS[format], max_frames), "Frame extraction")
+    folder = os.path.dirname(result["output_path"])
+    return {"output_folder": folder, "frame_count": len(os.listdir(folder))}
+
+
+@mcp.tool()
+def enhance_frames(
+    input_folder: Annotated[str, Field(description="Folder of frames, e.g. from extract_frames_from_video")],
+    style: Annotated[Literal["anime", "general"], Field(description="'anime' for animation, 'general' for live-action")] = "general",
+    fast: Annotated[bool, Field(description="Anime only: use the faster anime-video model")] = False,
+    scale: Annotated[Literal[2, 3, 4], Field(description="Upscale factor")] = 4,
+    output_folder: Annotated[str | None, Field(description="Default: '<input_folder>_enhanced'")] = None,
+    format: Annotated[Literal["png", "jpg", "webp"], Field(description="Image format")] = "png",
+    in_place: Annotated[bool, Field(description="Overwrite the input frames instead of writing a new folder")] = False,
+) -> dict:
+    """Upscale and clean up frames with Real-ESRGAN. Needs models from scripts/fetch_models.py."""
+    if not os.path.isdir(input_folder):
+        raise ToolError(f"Folder not found: {input_folder}")
+    if style == "anime":
+        model = "realesr-animevideov3" if fast else "realesrgan-x4plus-anime"
+    else:
+        model = "realesrgan-x4plus"
+    code, log, out = cut_video.enhance_frames(input_folder, output_folder, model, scale, IMG_FORMATS[format], in_place)
+    if code != 0:
+        hint = " Run: python scripts/fetch_models.py realesrgan" if "RealESRGAN" in log else ""
+        raise ToolError(f"Enhance failed: {log.strip()[-600:]}{hint}")
+    return {"output_folder": out, "model": model, "scale": scale}
+
 
 def main():
-    mcp.run(transport='stdio')
+    mcp.run(transport="stdio")
+
+
 if __name__ == "__main__":
     main()

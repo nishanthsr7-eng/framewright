@@ -1,70 +1,57 @@
 import os
 import sys
+from typing import Annotated
+
+from pydantic import Field
 
 if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-cur_path = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, cur_path + "/..")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from framewright_core import run_tool as _run
+from framewright_core import setup_logging
 from mcp.server.fastmcp import FastMCP
+
 from chroma_key_mcp import chroma
 
+setup_logging()
 mcp = FastMCP("chroma-key-mcp")
 
+KeyColor = Annotated[str, Field(pattern=r"^(0x|#)[0-9A-Fa-f]{6}$", description="Screen colour: 0x00FF00 green, 0x0000FF blue")]
+Similarity = Annotated[float, Field(ge=0.01, le=1, description="Colour tolerance; higher removes more")]
+Blend = Annotated[float, Field(ge=0, le=1, description="Edge softness")]
 
-@mcp.tool()
-def remove_background(input_path, color="0x00FF00", similarity=0.18, blend=0.05, output_path=None):
-    """
-    对绿幕/蓝幕视频抠像，将指定颜色变为透明，输出带 alpha 通道的 webm 视频。
-    输出文件可以直接作为 compositor-mcp / timeline-project-mcp 的叠加层使用。
 
-    Input: input_path (str) - 绿幕(或其他纯色背景)视频文件路径。
-
-    Optional params:
-      color (str, 默认 "0x00FF00"): 要去除的背景颜色(十六进制 RGB，
-        0x00FF00=绿幕，0x0000FF=蓝幕)。
-      similarity (float, 默认 0.18): 颜色匹配的容差(0-1)，越大去除范围越广，
-        但可能误伤主体颜色相近的部分。
-      blend (float, 默认 0.05): 边缘羽化程度(0-1)，越大边缘越柔和。
-      output_path (str, 默认 None): 输出文件路径(.webm)。不传则默认为
-        D:\\...\\Output\\<视频名>\\<视频名>_keyed.webm
-
-    Output: {output_path, color, similarity, blend}
-    Usage: remove_background(input_path="D:\\...\\Sources\\greenscreen.mp4")
-    """
-    return chroma.remove_background(input_path, color=color, similarity=similarity,
-                                     blend=blend, output_path=output_path)
+def _norm(color: str) -> str:
+    return "0x" + color[-6:]
 
 
 @mcp.tool()
-def replace_background(foreground_path, background_path, color="0x00FF00", similarity=0.18,
-                        blend=0.05, output_path=None):
-    """
-    对绿幕/蓝幕视频抠像，并将抠出的主体合成到一个新的背景(图片或视频)上，
-    一步完成"换背景"。
+def remove_background(
+    input_path: Annotated[str, Field(description="Green- or blue-screen video")],
+    color: KeyColor = "0x00FF00",
+    similarity: Similarity = 0.18,
+    blend: Blend = 0.05,
+    output_path: Annotated[str | None, Field(description="Output .webm; default: output/<video>/<video>_keyed.webm")] = None,
+) -> dict:
+    """Key out a solid screen colour. Writes a .webm with alpha, ready to use as an overlay layer."""
+    return _run(chroma.remove_background, input_path, color=_norm(color), similarity=similarity,
+                blend=blend, output_path=output_path)
 
-    Input:
-      foreground_path (str) - 绿幕(或其他纯色背景)视频文件路径，决定输出
-        分辨率、帧率和时长。
-      background_path (str) - 新背景，图片或视频文件路径。如果是视频且比
-        前景短则自动循环；图片会自动按前景画面比例裁剪填充。
 
-    Optional params:
-      color (str, 默认 "0x00FF00"): 要去除的背景颜色(十六进制 RGB)。
-      similarity (float, 默认 0.18): 颜色匹配容差(0-1)。
-      blend (float, 默认 0.05): 边缘羽化程度(0-1)。
-      output_path (str, 默认 None): 输出文件路径。不传则默认为
-        D:\\...\\Output\\<前景视频名>\\<前景视频名>_bg_replaced.<ext>
-
-    Output: {output_path, color, similarity, blend}
-    Usage:
-      replace_background(foreground_path="D:\\...\\Sources\\greenscreen.mp4",
-                          background_path="D:\\...\\Sources\\city.mp4")
-    """
-    return chroma.replace_background(foreground_path, background_path, color=color,
-                                      similarity=similarity, blend=blend, output_path=output_path)
+@mcp.tool()
+def replace_background(
+    foreground_path: Annotated[str, Field(description="Green- or blue-screen video; sets size, fps and length")],
+    background_path: Annotated[str, Field(description="New background image or video (looped and cropped to fit)")],
+    color: KeyColor = "0x00FF00",
+    similarity: Similarity = 0.18,
+    blend: Blend = 0.05,
+    output_path: Annotated[str | None, Field(description="Default: output/<video>/<video>_bg_replaced.<ext>")] = None,
+) -> dict:
+    """Key out a screen colour and put the subject over a new background in one step."""
+    return _run(chroma.replace_background, foreground_path, background_path, color=_norm(color),
+                similarity=similarity, blend=blend, output_path=output_path)
 
 
 def main():

@@ -1,7 +1,8 @@
 
+import os
 import tempfile
 import zipfile
-import os
+
 
 def convert_to_seconds(time_input):
     """

@@ -5,24 +5,8 @@ import tempfile
 
 import librosa
 import numpy as np
-
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
+from framewright_core import output_root as _get_output_root
+from framewright_core import run_ffmpeg as _run_ffmpeg
 
 
 def _probe(video_path):
@@ -32,11 +16,11 @@ def _probe(video_path):
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"ffprobe 失败: {result.stderr[-1000:]}")
+        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
     data = json.loads(result.stdout)
     vstream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
     if vstream is None:
-        raise RuntimeError(f"未找到视频流: {video_path}")
+        raise RuntimeError(f"No video stream in: {video_path}")
     has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
     duration = float(data["format"].get("duration") or vstream.get("duration") or 0.0)
     num, den = (vstream.get("r_frame_rate", "30/1").split("/") + ["1"])[:2]
@@ -45,13 +29,6 @@ def _probe(video_path):
         "duration": duration, "has_audio": has_audio,
         "width": int(vstream["width"]), "height": int(vstream["height"]), "fps": fps,
     }
-
-
-def _run_ffmpeg(args, timeout=1800):
-    cmd = ["ffmpeg", "-y"] + args
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg 失败: {result.stderr[-1500:]}")
 
 
 def _default_output_path(video_path):
@@ -89,14 +66,14 @@ def generate_highlights(video_path, target_duration=30.0, clip_duration=3.0,
       或过于集中在同一段。
     """
     if not os.path.exists(video_path):
-        raise FileNotFoundError(f"找不到文件: {video_path}")
+        raise FileNotFoundError(f"File not found: {video_path}")
 
     info = _probe(video_path)
     duration = info["duration"]
     if not info["has_audio"]:
-        raise RuntimeError(f"视频没有音轨，无法分析: {video_path}")
+        raise RuntimeError(f"Video has no audio track to analyse: {video_path}")
     if duration <= clip_duration:
-        raise ValueError("视频时长太短，无法生成集锦")
+        raise ValueError("Video is too short for a highlight reel; lower clip_duration")
 
     with tempfile.TemporaryDirectory() as tmp:
         audio_path = os.path.join(tmp, "audio.wav")
@@ -127,7 +104,7 @@ def generate_highlights(video_path, target_duration=30.0, clip_duration=3.0,
                 break
 
         if not selected:
-            raise RuntimeError("未能选出任何高光片段")
+            raise RuntimeError("No highlight moments found; lower target_duration or clip_duration")
 
         selected.sort(key=lambda c: c[0])
 

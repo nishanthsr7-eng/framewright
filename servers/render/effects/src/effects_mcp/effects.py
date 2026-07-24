@@ -1,24 +1,10 @@
 import json
 import os
 import subprocess
+from functools import partial
 
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
+from framewright_core import output_root as _get_output_root
+from framewright_core import run_ffmpeg
 
 
 def _probe(video_path):
@@ -28,11 +14,11 @@ def _probe(video_path):
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"ffprobe 失败: {result.stderr[-1000:]}")
+        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
     data = json.loads(result.stdout)
     vstream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
     if vstream is None:
-        raise RuntimeError(f"未找到视频流: {video_path}")
+        raise RuntimeError(f"No video stream in: {video_path}")
     has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
     width = int(vstream["width"])
     height = int(vstream["height"])
@@ -49,28 +35,24 @@ def _default_output_path(video_path, suffix):
     return os.path.join(out_dir, f"{base}_{suffix}{ext if ext else '.mp4'}")
 
 
-def _run_ffmpeg(args, timeout=600):
-    cmd = ["ffmpeg", "-y"] + args
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg 失败: {result.stderr[-1500:]}")
+_run_ffmpeg = partial(run_ffmpeg, timeout=600)
 
 
 EFFECTS = {
-    "zoom_punch": "短促的放大冲击(由内而外猛地放大再恢复)，常用于打击/强调瞬间",
-    "shake": "快速抖动(模拟撞击/震动)",
-    "rgb_split": "RGB 通道分离(色差/故障风格)",
-    "flash": "短促白色闪光，常用于卡点强调",
-    "vignette": "暗角(画面四周变暗，聚焦中心)",
-    "glow": "柔光/光晕(画面发光、提亮高光)",
-    "film_grain": "胶片噪点颗粒",
-    "light_leak": "暖色调光漏(暖色调色风格叠加)",
-    "speed_ramp": "整体变速(慢动作或快进)",
-    "grade_warm": "暖色调色(偏橙黄，怀旧/温暖感)",
-    "grade_cool": "冷色调色(偏蓝青，冷峻/科技感)",
-    "grade_high_contrast": "高对比度调色(更强的明暗对比和饱和度)",
-    "grade_faded": "褪色风格调色(降低对比度和饱和度，复古胶片感)",
-    "grade_punchy": "高饱和高对比\"剪辑风\"调色(动漫/游戏剪辑常用)",
+    "zoom_punch": "Quick zoom punch-in and back, for hits and emphasis",
+    "shake": "Fast camera shake for impacts",
+    "rgb_split": "RGB channel split, glitch look",
+    "flash": "Short white flash on a beat",
+    "vignette": "Darkened edges",
+    "glow": "Soft bloom on highlights",
+    "film_grain": "Film grain",
+    "light_leak": "Warm light-leak tint",
+    "speed_ramp": "Whole-clip speed change",
+    "grade_warm": "Warm grade",
+    "grade_cool": "Cool grade",
+    "grade_high_contrast": "High-contrast grade",
+    "grade_faded": "Faded film grade",
+    "grade_punchy": "Punchy saturated edit grade",
 }
 
 TRANSITIONS = [
@@ -170,7 +152,7 @@ def _build_filter(effect, info, intensity, start, end):
         if preset == "punchy":
             return f"eq=contrast={1 + 0.25*intensity}:saturation={1 + 0.5*intensity}:gamma=1.05"
 
-    raise ValueError(f"未知特效: {effect}，可用特效: {list(EFFECTS.keys())}")
+    raise ValueError(f"Unknown effect: {effect}. Available: {list(EFFECTS.keys())}")
 
 
 def apply_effect(video_path, effect, intensity=1.0, start_time=0.0, duration=None, output_path=None):
@@ -183,7 +165,7 @@ def apply_effect(video_path, effect, intensity=1.0, start_time=0.0, duration=Non
       以外的特效，仅在该区间内生效，区间外画面不变。duration 默认覆盖到视频结尾。
     """
     if effect not in EFFECTS:
-        raise ValueError(f"未知特效: {effect}，可用特效: {list(EFFECTS.keys())}")
+        raise ValueError(f"Unknown effect: {effect}. Available: {list(EFFECTS.keys())}")
 
     info = _probe(video_path)
     end_time = start_time + duration if duration is not None else info["duration"]
@@ -230,7 +212,7 @@ def apply_transition(video_a, video_b, transition="fade", duration=0.5, output_p
     duration: 转场持续时间(秒)。
     """
     if transition not in TRANSITIONS:
-        raise ValueError(f"未知转场: {transition}，可用转场: {TRANSITIONS}")
+        raise ValueError(f"Unknown transition: {transition}. Available: {TRANSITIONS}")
 
     info_a = _probe(video_a)
     info_b = _probe(video_b)

@@ -2,24 +2,10 @@ import json
 import os
 import subprocess
 import tempfile
+from functools import partial
 
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
+from framewright_core import output_root as _get_output_root
+from framewright_core import run_ffmpeg
 
 
 def _default_output_path(input_path, suffix, ext=None):
@@ -34,17 +20,13 @@ def _probe(path):
     cmd = ["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", path]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"ffprobe 失败: {result.stderr[-1000:]}")
+        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
     data = json.loads(result.stdout)
     has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
     return {"has_audio": has_audio}
 
 
-def _run_ffmpeg(args, timeout=3600, cwd=None):
-    cmd = ["ffmpeg", "-y"] + args
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg 失败: {result.stderr[-1500:]}")
+_run_ffmpeg = partial(run_ffmpeg, timeout=3600)
 
 
 def _escape_filter_path(path):
@@ -55,7 +37,7 @@ def _escape_filter_path(path):
 
 def stabilize_video(input_path, smoothing=10, shakiness=5, zoom=0, output_path=None):
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f"找不到文件: {input_path}")
+        raise FileNotFoundError(f"File not found: {input_path}")
 
     info = _probe(input_path)
     shakiness = max(1, min(10, int(shakiness)))

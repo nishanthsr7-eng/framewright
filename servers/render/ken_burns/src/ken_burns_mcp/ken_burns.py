@@ -1,27 +1,11 @@
 import os
-import subprocess
+
+from framewright_core import output_root as _get_output_root
+from framewright_core import run_ffmpeg as _run_ffmpeg
 
 PAN_DIRECTIONS = {
     "center", "left_to_right", "right_to_left", "top_to_bottom", "bottom_to_top",
 }
-
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
 
 
 def _default_output_path(input_path, suffix="ken_burns"):
@@ -31,19 +15,12 @@ def _default_output_path(input_path, suffix="ken_burns"):
     return os.path.join(out_dir, f"{base}_{suffix}.mp4")
 
 
-def _run_ffmpeg(args, timeout=1800):
-    cmd = ["ffmpeg", "-y"] + args
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg 失败: {result.stderr[-1500:]}")
-
-
 def create_ken_burns(image_path, duration=5.0, zoom_start=1.0, zoom_end=1.3, pan="center",
                       width=1920, height=1080, fps=30, output_path=None):
     if not os.path.exists(image_path):
-        raise FileNotFoundError(f"找不到图片: {image_path}")
+        raise FileNotFoundError(f"Image not found: {image_path}")
     if pan not in PAN_DIRECTIONS:
-        raise ValueError(f"pan 必须是: {', '.join(sorted(PAN_DIRECTIONS))}")
+        raise ValueError(f"pan must be one of: {', '.join(sorted(PAN_DIRECTIONS))}")
 
     duration = float(duration)
     fps = int(fps)

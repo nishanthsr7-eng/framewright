@@ -1,25 +1,8 @@
 import os
 
-from scenedetect import open_video, SceneManager, split_video_ffmpeg
+from framewright_core import output_root as _get_output_root
+from scenedetect import SceneManager, open_video, split_video_ffmpeg
 from scenedetect.detectors import ContentDetector
-
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
 
 
 def _find_scenes(video_path, threshold=27.0, min_scene_len=15):
@@ -38,7 +21,7 @@ def detect_scenes(video_path, threshold=27.0, min_scene_len=15):
     min_scene_len: 最短镜头长度(帧数)，默认 15。
     """
     if not os.path.exists(video_path):
-        raise FileNotFoundError(f"找不到文件: {video_path}")
+        raise FileNotFoundError(f"File not found: {video_path}")
 
     _, scene_list = _find_scenes(video_path, threshold=threshold, min_scene_len=min_scene_len)
 
@@ -59,7 +42,7 @@ def split_scenes(video_path, output_folder=None, threshold=27.0, min_scene_len=1
     检测视频镜头切换点，并将视频按镜头拆分为多个独立的视频文件(基于 ffmpeg)。
     """
     if not os.path.exists(video_path):
-        raise FileNotFoundError(f"找不到文件: {video_path}")
+        raise FileNotFoundError(f"File not found: {video_path}")
 
     _, scene_list = _find_scenes(video_path, threshold=threshold, min_scene_len=min_scene_len)
 

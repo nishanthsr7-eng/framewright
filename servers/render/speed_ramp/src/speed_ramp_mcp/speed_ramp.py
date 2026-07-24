@@ -3,23 +3,8 @@ import os
 import subprocess
 import tempfile
 
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
+from framewright_core import output_root as _get_output_root
+from framewright_core import run_ffmpeg as _run_ffmpeg
 
 
 def _default_output_path(input_path, suffix):
@@ -34,7 +19,7 @@ def _probe(path):
     cmd = ["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", path]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"ffprobe 失败: {result.stderr[-1000:]}")
+        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
     data = json.loads(result.stdout)
     vstream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
     has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
@@ -45,13 +30,6 @@ def _probe(path):
     else:
         fps = 30.0
     return {"has_audio": has_audio, "duration": duration, "fps": fps}
-
-
-def _run_ffmpeg(args, timeout=1800):
-    cmd = ["ffmpeg", "-y"] + args
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg 失败: {result.stderr[-1500:]}")
 
 
 def _atempo_chain(speed):
@@ -77,10 +55,10 @@ def _speed_vf(speed, fps, smooth):
 
 def change_speed(input_path, speed=1.0, smooth=True, output_path=None):
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f"找不到文件: {input_path}")
+        raise FileNotFoundError(f"File not found: {input_path}")
     speed = float(speed)
     if speed <= 0:
-        raise ValueError("speed 必须大于 0")
+        raise ValueError("speed must be greater than 0")
 
     info = _probe(input_path)
     vf = _speed_vf(speed, info["fps"], smooth)
@@ -104,9 +82,9 @@ def change_speed(input_path, speed=1.0, smooth=True, output_path=None):
 
 def speed_ramp(input_path, segments, output_path=None):
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f"找不到文件: {input_path}")
+        raise FileNotFoundError(f"File not found: {input_path}")
     if not segments:
-        raise ValueError("segments 不能为空")
+        raise ValueError("segments is empty")
 
     info = _probe(input_path)
 
@@ -123,9 +101,9 @@ def speed_ramp(input_path, segments, output_path=None):
             speed = float(seg.get("speed", 1.0))
             smooth = seg.get("smooth", True)
             if end <= start:
-                raise ValueError(f"片段 {i} 的 end 必须大于 start")
+                raise ValueError(f"segment {i}: end must be greater than start")
             if speed <= 0:
-                raise ValueError(f"片段 {i} 的 speed 必须大于 0")
+                raise ValueError(f"segment {i}: speed must be greater than 0")
 
             seg_path = os.path.join(tmp, f"seg_{i:03d}.mp4")
             vf = _speed_vf(speed, info["fps"], smooth)

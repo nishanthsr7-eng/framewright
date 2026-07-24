@@ -1,39 +1,15 @@
-import sys
-import ffmpeg_mcp.ffmpeg as ffmpeg
-import ffmpeg_mcp.utils as utils
 import os
 import shlex
 import shutil
+import sys
 import tempfile
-from typing import List
 from enum import Enum
 
+from framewright_core import output_root as _get_output_root
+from framewright_core import servers_dir as _find_tools_dir
 
-def _find_tools_dir():
-    """
-    向上查找名为 "servers" 的目录并返回其路径，找不到返回 None。
-    """
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    """
-    返回项目根目录下的 Output 文件夹路径。
-    通过向上查找名为 "servers" 的目录并取其父目录来定位，
-    避免因相对路径层级硬编码而出错。
-    """
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    # 未找到 "Tools" 目录，回退到当前文件所在目录下的 Output
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
+import ffmpeg_mcp.ffmpeg as ffmpeg
+import ffmpeg_mcp.utils as utils
 
 
 def enhance_frames(input_folder, output_folder=None, model="realesrgan-x4plus", scale=4, format=0, in_place=False):
@@ -54,16 +30,16 @@ def enhance_frames(input_folder, output_folder=None, model="realesrgan-x4plus", 
     """
     tools_dir = _find_tools_dir()
     if tools_dir is None:
-        return -1, "未找到 servers 目录，无法定位 RealESRGAN", ""
+        return -1, "Could not find the repo's servers/ folder to locate RealESRGAN", ""
 
     esrgan_dir = os.path.join(os.path.dirname(tools_dir), "models", "realesrgan")
     exe_name = "realesrgan-ncnn-vulkan.exe" if os.name == "nt" else "realesrgan-ncnn-vulkan"
     exe_path = os.path.join(esrgan_dir, exe_name)
     models_dir = os.path.join(esrgan_dir, "models")
     if not os.path.isfile(exe_path):
-        return -1, f"未找到 RealESRGAN 程序: {exe_path}", ""
+        return -1, f"RealESRGAN binary not found: {exe_path}", ""
     if not os.path.isdir(input_folder):
-        return -1, f"输入文件夹不存在: {input_folder}", ""
+        return -1, f"Input folder not found: {input_folder}", ""
 
     temp_dir = None
     if in_place:
@@ -124,16 +100,16 @@ def clip_video_ffmpeg(video_path, start = None, end = None, duration=None, outpu
     """
     try:
         base, ext = os.path.splitext(video_path)
-        if (output_path == None):
+        if (output_path is None):
             output_path = f"{base}_clip{ext}"
         cmd = f"-i {shlex.quote(video_path)} "
-        if (start != None):
+        if (start is not None):
             start_sec = utils.convert_to_seconds(start)
             cmd = f"{cmd} -ss {start_sec}"
-        if (end == None and duration is not None):
+        if (end is None and duration is not None):
             end = start_sec + utils.convert_to_seconds(duration)
-        if (end != None):
-            end_sec = utils.convert_to_seconds(end) 
+        if (end is not None):
+            end_sec = utils.convert_to_seconds(end)
             cmd = f"{cmd} -to {end_sec}"
         cmd = f"{cmd} -y {shlex.quote(output_path)}"
         print(cmd, file=sys.stderr)
@@ -141,13 +117,13 @@ def clip_video_ffmpeg(video_path, start = None, end = None, duration=None, outpu
         print(log, file=sys.stderr)
         return {"code": status_code, "output_path": output_path, "log_tail": log[-1500:]}
     except Exception as e:
-        print(f"剪辑失败: {str(e)}", file=sys.stderr)
+        print(f"Clip failed: {str(e)}", file=sys.stderr)
         return {"code": -1, "output_path": "", "error": str(e)}
-    
-    
 
 
-def concat_videos(input_files: List[str], output_path: str = None, 
+
+
+def concat_videos(input_files: list[str], output_path: str = None,
                       fast: bool = True):
     """
     使用FFmpeg拼接多个视频文件
@@ -171,8 +147,8 @@ def concat_videos(input_files: List[str], output_path: str = None,
     # 检查输入文件是否存在
     for file in input_files:
         if not os.path.exists(file):
-            raise FileNotFoundError(f"输入文件 {file} 不存在")
-    if fast == True:
+            raise FileNotFoundError(f"Input file not found: {file}")
+    if fast:
         try:
             # 创建临时文件列表
             temp_list_file = utils.create_temp_file()
@@ -183,7 +159,7 @@ def concat_videos(input_files: List[str], output_path: str = None,
                         f.write(f"file '{abs_path}'\n")
                     else:
                         f.write(f"file '{abs_path}'\n")
-            
+
             # 构建FFmpeg命令
             cmd = f"-f concat -safe 0 -i {shlex.quote(temp_list_file)} -c copy -y {shlex.quote(output_path)}"
             return ffmpeg.run_ffmpeg(cmd)
@@ -192,12 +168,12 @@ def concat_videos(input_files: List[str], output_path: str = None,
             if os.path.exists(temp_list_file):
                 os.remove(temp_list_file)
 
-    elif fast == False:
+    elif not fast:
         inputs = []
         filter_str = ""
         fmt_ctx = ffmpeg.media_format_ctx(input_files[0])
         if fmt_ctx is None:
-            return -1, f"{input_files[0]} 视频解析失败！！"
+            return -1, f"{input_files[0]}: could not read the video"
         map = ""
         if len(fmt_ctx.video_streams) > 0: ## 视频+音频
             width = fmt_ctx.video_streams[0].width
@@ -210,12 +186,12 @@ def concat_videos(input_files: List[str], output_path: str = None,
                 if i > 0:
                     tmp_fmt_ctx = ffmpeg.media_format_ctx(file)
                     if (tmp_fmt_ctx is None):
-                        return -1, f"{input_files[i]} 视频解析失败！！"
+                        return -1, f"{input_files[i]}: could not read the video"
                     if len(tmp_fmt_ctx.video_streams) == 0:
-                        return -1, f"{input_files[i]} 不包含视频流！！"
+                        return -1, f"{input_files[i]}: no video stream"
                     tmp_width = tmp_fmt_ctx.video_streams[0].width
                     tmp_height = tmp_fmt_ctx.video_streams[0].height
-                    tmp_aspect = float(tmp_width)/float(tmp_height) 
+                    tmp_aspect = float(tmp_width)/float(tmp_height)
                     if tmp_width == width and tmp_height == height:
                         filter_str += f"[{i}:v]setsar=1[{i}v];"
                     elif tmp_aspect == aspect:
@@ -223,7 +199,7 @@ def concat_videos(input_files: List[str], output_path: str = None,
                     elif abs(tmp_aspect-aspect) < 0.15: #使用increase
                         filter_str += f"[{i}:v]scale={width}:{height}:force_original_aspect_ratio=increase,setsar=1,crop=x=(iw-{width})/2:y=({height}-ih)/2:w={width}:h={height},setsar=1[{i}v];"
                     else:
-                        filter_str += f"[{i}:v]scale={width}:{height}:force_original_aspect_ratio=decrease,setsar=1,pad={width}:{height}:({width}-iw)/2:({height}-ih)/2,setsar=1[{i}v];"  
+                        filter_str += f"[{i}:v]scale={width}:{height}:force_original_aspect_ratio=decrease,setsar=1,pad={width}:{height}:({width}-iw)/2:({height}-ih)/2,setsar=1[{i}v];"
             for i, file in enumerate(input_files):
                 if len(fmt_ctx.audio_streams) > 0:
                     filter_str += f"[{i}v][{i}:a]"
@@ -242,21 +218,21 @@ def concat_videos(input_files: List[str], output_path: str = None,
                 inputs.extend(["-i", shlex.quote(file)])
             filter_str += f"concat=n={len(input_files)}:a=1:v=0[outa]"
             map = " -map '[outa]' "
-            
+
         if len(filter_str) == 0:
-            return -1, f"{input_files[0]} 视频中不包含任何音视频流！！"
+            return -1, f"{input_files[0]}: no audio or video streams"
         # 构建输入参数和滤镜表达式
         inputs_str = " ".join(inputs)
         cmd = f" {inputs_str} -lavfi '{filter_str}' {map} -y {shlex.quote(output_path)}"
         return ffmpeg.run_ffmpeg(cmd)
-    
+
 
 def get_video_info(video_path: str):
     cmd = f" -v error -show_streams -of json -i {shlex.quote(video_path)}"
     return ffmpeg.run_ffprobe(cmd, timeout=60)
-        
-        
-        
+
+
+
 def video_play(video_path: str, speed, loop):
     speed = float(speed)
     loop = int(loop)
@@ -274,8 +250,8 @@ def video_play(video_path: str, speed, loop):
     cmd = f" {cmd } {audio_filter_str} {video_filter_str}   -i {shlex.quote(video_path)}"
     print(cmd, file=sys.stderr)
     return ffmpeg.run_ffplay(cmd, timeout=60)
-        
-     
+
+
 class Position(Enum):
     TopLeft = 1,
     TopCenter = 2,
@@ -286,7 +262,7 @@ class Position(Enum):
     BottomLeft = 7,
     LeftCenter = 8,
     Center = 9
-           
+
 def overlay_video(background_video, overlay_video, output_path: str = None, position: int = 1,  dx = 0, dy = 0):
     """
     两个视频叠加，注意不是拼接长度，而是画中画效果
@@ -301,8 +277,8 @@ def overlay_video(background_video, overlay_video, output_path: str = None, posi
     """
     try:
         base, ext = os.path.splitext(background_video)
-        if (output_path == None):
-            if (ext == None or len(ext) == 0):
+        if (output_path is None):
+            if (ext is None or len(ext) == 0):
                 ext = ".mp4"
             output_path = f"{base}_clip{ext}"
         x = ""
@@ -321,20 +297,20 @@ def overlay_video(background_video, overlay_video, output_path: str = None, posi
             y = f"(H-h)+{dy}"
         elif position == 5:
             x = f"(W-w)+{dx}"
-            y = f"(H-h)+{dy}"    
+            y = f"(H-h)+{dy}"
         elif position == 4:
             x = f"(W-w)+{dx}"
-            y = f"(H-h)/2+{dy}"    
+            y = f"(H-h)/2+{dy}"
         elif position == 3:
             x = f"(W-w)+{dx}"
-            y = f"{dy}"   
+            y = f"{dy}"
         elif position == 2:
             x = f"(W-w)/2+{dx}"
-            y = f"{dy}"   
+            y = f"{dy}"
         elif position == 9:
             x = f"(W-w)/2+{dx}"
-            y = f"(H-h)/2+{dy}"   
-            
+            y = f"(H-h)/2+{dy}"
+
         cmd = f" -i {shlex.quote(background_video)} -i {shlex.quote(overlay_video)} -filter_complex \"[0:v][1:v]overlay=x={x}:y={y}[ov];[0:a][1:a]amix=inputs=2:weights='3 1'[oa]\" -map '[ov]' -map '[oa]'"
         cmd = f"{cmd} -y {shlex.quote(output_path)}"
         print(cmd, file=sys.stderr)
@@ -342,10 +318,10 @@ def overlay_video(background_video, overlay_video, output_path: str = None, posi
         print(log, file=sys.stderr)
         return {"code": status_code, "output_path": output_path, "log_tail": log[-1500:]}
     except Exception as e:
-        print(f"剪辑失败: {str(e)}", file=sys.stderr)
+        print(f"Clip failed: {str(e)}", file=sys.stderr)
         return {"code": -1, "output_path": "", "error": str(e)}
-    
-    
+
+
 def scale_video(video_path, width, height = -2,output_path: str = None):
     """
     视频缩放
@@ -357,11 +333,11 @@ def scale_video(video_path, width, height = -2,output_path: str = None):
     """
     try:
         base, ext = os.path.splitext(video_path)
-        if (output_path == None):
-            if (ext == None or len(ext) == 0):
+        if (output_path is None):
+            if (ext is None or len(ext) == 0):
                 ext = ".mp4"
             output_path = f"{base}_clip{ext}"
-    
+
         cmd = f" -i {shlex.quote(video_path)} -filter_complex \"scale={width}:{height}\""
         cmd = f"{cmd} -y {shlex.quote(output_path)}"
         print(cmd, file=sys.stderr)
@@ -369,9 +345,9 @@ def scale_video(video_path, width, height = -2,output_path: str = None):
         print(log, file=sys.stderr)
         return {"code": status_code, "output_path": output_path, "log_tail": log[-1500:]}
     except Exception as e:
-        print(f"剪辑失败: {str(e)}", file=sys.stderr)
+        print(f"Clip failed: {str(e)}", file=sys.stderr)
         return {"code": -1, "output_path": "", "error": str(e)}
-    
+
 
 def extract_frames_from_video(video_path,fps=0, output_folder=None, format=0, total_frames=0):
     """
@@ -383,7 +359,7 @@ def extract_frames_from_video(video_path,fps=0, output_folder=None, format=0, to
     :param format: 输出图像的图片格式 0：png 1:jpg 2:webp。
     """
     # 确保输出文件夹存在
-    if output_folder == None:
+    if output_folder is None:
         # Default: Output/<anime name>/, where <anime name> is the
         # video's filename without extension. "Output" lives next to
         # the "Tools" folder (cut_video.py is under
@@ -414,5 +390,5 @@ def extract_frames_from_video(video_path,fps=0, output_folder=None, format=0, to
         print(log, file=sys.stderr)
         return {"code": status_code, "output_path": output_path, "log_tail": log[-1500:]}
     except Exception as e:
-        print(f"抽取失败: {str(e)}", file=sys.stderr)
+        print(f"Frame extraction failed: {str(e)}", file=sys.stderr)
         return {"code": -1, "output_path": "", "error": str(e)}

@@ -2,27 +2,12 @@ import json
 import os
 import subprocess
 import tempfile
+from functools import partial
 
 import numpy as np
+from framewright_core import output_root as _get_output_root
+from framewright_core import run_ffmpeg
 from PIL import Image
-
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
 
 
 def _probe(path):
@@ -32,21 +17,17 @@ def _probe(path):
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"ffprobe 失败: {result.stderr[-1000:]}")
+        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
     data = json.loads(result.stdout)
     vstream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
     if vstream is None:
-        raise RuntimeError(f"未找到视频流: {path}")
+        raise RuntimeError(f"No video stream in: {path}")
     has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
     duration = float(data["format"].get("duration") or vstream.get("duration") or 0.0)
     return {"duration": duration, "has_audio": has_audio}
 
 
-def _run_ffmpeg(args, timeout=900):
-    cmd = ["ffmpeg", "-y"] + args
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg 失败: {result.stderr[-1500:]}")
+_run_ffmpeg = partial(run_ffmpeg, timeout=900)
 
 
 def _default_output_path(video_path, suffix):
@@ -78,7 +59,7 @@ def get_color_profile(video_path, samples=5):
     亮度/色调/对比度风格。
     """
     if not os.path.exists(video_path):
-        raise FileNotFoundError(f"找不到文件: {video_path}")
+        raise FileNotFoundError(f"File not found: {video_path}")
 
     pixels = _sample_pixels(video_path, samples=samples)
     mean = pixels.mean(axis=0)
@@ -100,9 +81,9 @@ def match_color(reference_path, target_path, output_path=None, samples=5, streng
       0.0 = 不做改变。默认 1.0。
     """
     if not os.path.exists(reference_path):
-        raise FileNotFoundError(f"找不到文件: {reference_path}")
+        raise FileNotFoundError(f"File not found: {reference_path}")
     if not os.path.exists(target_path):
-        raise FileNotFoundError(f"找不到文件: {target_path}")
+        raise FileNotFoundError(f"File not found: {target_path}")
 
     ref_pixels = _sample_pixels(reference_path, samples=samples)
     tgt_pixels = _sample_pixels(target_path, samples=samples)
