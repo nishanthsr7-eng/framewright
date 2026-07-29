@@ -2,6 +2,7 @@
 Run with: python generate_luts.py
 """
 import os
+
 import numpy as np
 
 SIZE = 17
@@ -111,6 +112,19 @@ def bleach_bypass(r, g, b):
     return nr, ng, nb
 
 
+def anime_vibrant(r, g, b):
+    # flat cel colours: more saturation, gentle contrast, clean whites
+    lum = 0.299 * r + 0.587 * g + 0.114 * b
+    sat = 1.25
+    nr = lum + (r - lum) * sat
+    ng = lum + (g - lum) * sat
+    nb = lum + (b - lum) * sat
+    nr = 0.5 + (nr - 0.5) * 1.08
+    ng = 0.5 + (ng - 0.5) * 1.08
+    nb = 0.5 + (nb - 0.5) * 1.08 + 0.01
+    return nr, ng, nb
+
+
 PRESETS = {
     "cinematic_teal_orange": cinematic_teal_orange,
     "warm_vintage": warm_vintage,
@@ -119,6 +133,7 @@ PRESETS = {
     "faded_film": faded_film,
     "moody_green": moody_green,
     "bleach_bypass": bleach_bypass,
+    "anime_vibrant": anime_vibrant,
 }
 
 

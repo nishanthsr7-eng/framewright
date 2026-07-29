@@ -1,180 +1,98 @@
 import os
 import sys
+from typing import Annotated, Literal
+
+from pydantic import Field
 
 if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-cur_path = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, cur_path + "/..")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from framewright_core import run_tool as _run
+from framewright_core import setup_logging
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
+
 from text_overlay_mcp import overlay, renderer
 
+setup_logging()
 mcp = FastMCP("text-overlay-mcp")
 
+FontName = Literal[tuple(renderer.list_fonts())]  # bundled bold sans fonts
+Style = Annotated[Literal["anime", "general"], Field(description="Footage type; fills any look options left empty")]
 
-@mcp.tool()
-def list_fonts():
-    """
-    列出可用于 add_text_overlay 的内置字体名称（均为粗体无衬线，适合做"剧透/反转"文字特效）。
+# Defaults per footage style; only used for params the caller leaves as None.
+TEXT_STYLES = {
+    "general": {"font": "anton", "outline_width": 0, "shadow": False},
+    "anime": {"font": "bangers", "outline_width": 8, "shadow": True},
+}
+CAPTION_STYLES = {
+    "general": {"font": "anton", "outline_width": 6, "shadow": True, "highlight_color": "#FFD700"},
+    "anime": {"font": "bangers", "outline_width": 8, "shadow": True, "highlight_color": "#FF4FA3"},
+}
 
-    Output: 字体名称列表，例如 ["anton", "bebas-neue", "montserrat-extrabold",
-    "oswald-bold", "poppins-extrabold"]
-    """
-    return renderer.list_fonts()
+
+def _fill(preset: dict, **given) -> dict:
+    return {k: preset[k] if v is None else v for k, v in given.items()}
+Hex = Annotated[str, Field(pattern=r"^#[0-9A-Fa-f]{6}$", description="Colour as #RRGGBB")]
+Position = Annotated[Literal["top", "center", "bottom"], Field(description="Vertical placement")]
+Fps = Annotated[float | None, Field(gt=0, le=60, description="Overlay frame rate; default is the source rate, max 30")]
+OutFolder = Annotated[str | None, Field(description="Default: output/<video>_<kind>/")]
 
 
 @mcp.tool()
 def add_text_overlay(
-    video_path,
-    text,
-    output_folder=None,
-    font="anton",
-    font_size=None,
-    color="#FFFFFF",
-    outline_color="#000000",
-    outline_width=0,
-    shadow=False,
-    position="center",
-    start_time=0.0,
-    duration=None,
-    animation="word_by_word",
-    fps=None,
-):
-    """
-    为视频添加"剪辑风格"的文字特效（如 "IT WAS YOU" 这类粗体大字标题），
-    同时输出一个透明的文字叠加层视频和一个已将文字烧录进画面的完整视频。
-
-    Input:
-      video_path (str): 源视频文件路径。
-      text (str): 要显示的文字，使用 "\\n" 可分多行。
-
-    Optional params:
-      output_folder (str): 输出目录。不传则默认为
-        D:\\...\\Output\\<视频名>_text_overlay\\
-      font (str): 字体名称，可选: "anton" (默认，超粗体大写，最常见的剧情反转/
-        "IT WAS YOU" 风格), "bebas-neue" (瘦高型粗体), "montserrat-extrabold",
-        "poppins-extrabold" (圆润现代粗体), "oswald-bold"。
-        使用 list_fonts() 查看完整列表。
-      font_size (int): 字号(像素)。不传则按视频高度自动计算 (约为高度的9%)。
-      color (str | [str, str]): 文字颜色，hex 格式 "#RRGGBB"。
-        传一个颜色为纯色填充；传两个颜色 ["#FFFFFF", "#FFD700"] 为从上到下的渐变
-        (例如白到金色，常见的高光效果)。
-      outline_color (str): 描边颜色 hex，默认黑色 "#000000"。
-      outline_width (int): 描边宽度(像素)，0 = 无描边 (默认)。常见效果可设为 4~10。
-      shadow (bool): 是否添加投影，默认 False。
-      position (str): 文字位置 "top" | "center" (默认) | "bottom"。
-      start_time (float): 文字开始出现的时间点(秒)，默认 0。
-      duration (float): 文字显示的持续时间(秒)。不传则默认为从 start_time 到
-        视频结尾。
-      animation (str): 动画效果:
-        - "none": 全程静态显示
-        - "fade": 整体淡入 (默认动画时间内的前15%)
-        - "word_by_word" (默认): 逐词淡入出现，模拟 "反转剧情" 文字逐字弹出的效果
-        - "typewriter": 逐词快速依次出现 (打字机效果)
-      fps (float): 叠加层帧率。不传则使用源视频帧率(最高30)。
-
-    Output:
-      output_folder/overlay.webm  - 透明背景的文字动画视频 (VP9 + alpha通道，
-        可在其他编辑软件中作为叠加层使用)
-      output_folder/output_burned.<ext> - 文字已烧录进画面的完整视频 (与源视频
-        分辨率/音频一致)
-
-    Usage:
-      add_text_overlay(video_path="D:\\...\\Sources\\clip.mp4", text="IT WAS YOU",
-                        font="anton", color=["#FFFFFF", "#FFD700"],
-                        outline_color="#000000", outline_width=6,
-                        position="center", start_time=2.0, duration=2.5,
-                        animation="word_by_word")
-    """
-    return overlay.create_text_overlay(
-        video_path=video_path,
-        text=text,
-        output_folder=output_folder,
-        font=font,
-        font_size=font_size,
-        color=color,
-        outline_color=outline_color,
-        outline_width=outline_width,
-        shadow=shadow,
-        position=position,
-        start_time=start_time,
-        duration=duration,
-        animation=animation,
-        fps=fps,
-    )
+    video_path: Annotated[str, Field(description="Source video")],
+    text: Annotated[str, Field(min_length=1, description="Text to show; '\\n' starts a new line")],
+    output_folder: OutFolder = None,
+    style: Style = "general",
+    font: Annotated[FontName | None, Field(description="Bundled font; default from style")] = None,
+    font_size: Annotated[int | None, Field(gt=0, description="Pixels; default is about 9% of video height")] = None,
+    color: Annotated[Hex | list[Hex], Field(description="One colour, or two for a top-to-bottom gradient")] = "#FFFFFF",
+    outline_color: Hex = "#000000",
+    outline_width: Annotated[int | None, Field(ge=0, le=40, description="Outline in pixels; 0 for none; default from style")] = None,
+    shadow: Annotated[bool | None, Field(description="Add a drop shadow; default from style")] = None,
+    position: Position = "center",
+    start_time: Annotated[float, Field(ge=0, description="When the text appears, in seconds")] = 0.0,
+    duration: Annotated[float | None, Field(gt=0, description="Seconds on screen; default is to the end")] = None,
+    animation: Annotated[Literal["none", "fade", "word_by_word", "typewriter"], Field(description="How the text appears")] = "word_by_word",
+    fps: Fps = None,
+) -> dict:
+    """Add bold title text to a video. Writes a transparent overlay.webm and a burned-in copy."""
+    if isinstance(color, list) and len(color) not in (1, 2):
+        raise ToolError("color takes one hex colour or a list of two for a gradient")
+    look = _fill(TEXT_STYLES[style], font=font, outline_width=outline_width, shadow=shadow)
+    return _run(overlay.create_text_overlay, video_path=video_path, text=text, output_folder=output_folder,
+                font_size=font_size, color=color, outline_color=outline_color, **look, position=position, start_time=start_time,
+                duration=duration, animation=animation, fps=fps)
 
 
 @mcp.tool()
 def add_karaoke_captions(
-    video_path,
-    segments,
-    output_folder=None,
-    font="anton",
-    font_size=None,
-    color="#FFFFFF",
-    highlight_color="#FFD700",
-    outline_color="#000000",
-    outline_width=6,
-    shadow=True,
-    position="bottom",
-    max_words_per_line=6,
-    fps=None,
-):
-    """
-    根据词级时间戳，为视频添加"卡拉OK"风格字幕（逐词高亮，跟随语音节奏点亮），
-    同时输出一个透明的字幕叠加层视频和一个已烧录字幕的完整视频。
-
-    Input:
-      video_path (str): 源视频文件路径。
-      segments (List[{start, end, text, words: [{word, start, end}, ...]}]): 词级
-        时间戳数据，直接使用 audio-analyzer-mcp 的 transcribe_audio(word_timestamps=True)
-        返回结果中的 "segments" 字段。
-
-    Optional params:
-      output_folder (str): 输出目录。不传则默认为
-        D:\\...\\Output\\<视频名>_karaoke\\
-      font (str): 字体名称，见 text-overlay-mcp 的 list_fonts()，默认 "anton"。
-      font_size (int): 字号(像素)。不传则按视频高度自动计算 (约为高度的5.5%)。
-      color (str): 未播放词的颜色，hex 格式，默认 "#FFFFFF"。
-      highlight_color (str): 已播放/正在播放词的高亮颜色，默认 "#FFD700" (金色)。
-      outline_color (str): 描边颜色，默认 "#000000"。
-      outline_width (int): 描边宽度(像素)，默认 6。
-      shadow (bool): 是否添加投影，默认 True。
-      position (str): 字幕位置 "top" | "center" | "bottom" (默认)。
-      max_words_per_line (int): 每行最多显示的词数，默认 6。每个 segment 按此数量
-        切分为多行。
-      fps (float): 叠加层帧率。不传则使用源视频帧率(最高30)。
-
-    Output:
-      output_folder/overlay.webm - 透明背景的字幕动画视频 (VP9 + alpha通道)
-      output_folder/output_burned.<ext> - 字幕已烧录进画面的完整视频
-
-    Usage:
-      # 1. 先用 audio-analyzer-mcp 转录:
-      #    result = transcribe_audio(audio_path="D:\\...\\clip.mp4")
-      # 2. 再用 result["segments"] 生成卡拉OK字幕:
-      add_karaoke_captions(video_path="D:\\...\\Sources\\clip.mp4",
-                            segments=result["segments"],
-                            font="anton", highlight_color="#FFD700",
-                            position="bottom")
-    """
-    return overlay.create_karaoke_captions(
-        video_path=video_path,
-        segments=segments,
-        output_folder=output_folder,
-        font=font,
-        font_size=font_size,
-        color=color,
-        highlight_color=highlight_color,
-        outline_color=outline_color,
-        outline_width=outline_width,
-        shadow=shadow,
-        position=position,
-        max_words_per_line=max_words_per_line,
-        fps=fps,
-    )
+    video_path: Annotated[str, Field(description="Source video")],
+    segments: Annotated[list[dict], Field(min_length=1, description="The 'segments' list from transcribe_audio (word_timestamps=true)")],
+    output_folder: OutFolder = None,
+    style: Style = "general",
+    font: Annotated[FontName | None, Field(description="Bundled font; default from style")] = None,
+    font_size: Annotated[int | None, Field(gt=0, description="Pixels; default is about 5.5% of video height")] = None,
+    color: Annotated[Hex, Field(description="Colour of words not yet spoken")] = "#FFFFFF",
+    highlight_color: Annotated[Hex | None, Field(description="Colour of spoken words; default from style")] = None,
+    outline_color: Hex = "#000000",
+    outline_width: Annotated[int | None, Field(ge=0, le=40, description="Outline in pixels; default from style")] = None,
+    shadow: Annotated[bool | None, Field(description="Add a drop shadow; default from style")] = None,
+    position: Position = "bottom",
+    max_words_per_line: Annotated[int, Field(ge=1, le=20, description="Words per caption line")] = 6,
+    fps: Fps = None,
+) -> dict:
+    """Word-by-word highlighted captions from transcribe_audio output. Writes overlay.webm and a burned-in copy."""
+    if not any(s.get("words") for s in segments):
+        raise ToolError("segments have no 'words'. Run transcribe_audio with word_timestamps=true.")
+    look = _fill(CAPTION_STYLES[style], font=font, outline_width=outline_width, shadow=shadow,
+                 highlight_color=highlight_color)
+    return _run(overlay.create_karaoke_captions, video_path=video_path, segments=segments,
+                output_folder=output_folder, font_size=font_size, color=color,
+                outline_color=outline_color, **look, position=position, max_words_per_line=max_words_per_line, fps=fps)
 
 
 def main():

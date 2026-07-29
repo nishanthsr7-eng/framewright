@@ -5,27 +5,9 @@ import shutil
 import subprocess
 import tempfile
 
+from framewright_core import output_root as _get_output_root
+
 from text_overlay_mcp import renderer
-
-
-def _find_tools_dir():
-    """向上查找名为 "servers" 的目录并返回其路径，找不到返回 None。"""
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    """返回项目根目录下的 Output 文件夹路径（与 Frame_Extractor_MCP 保持一致）。"""
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
 
 
 def _run(cmd, timeout=600):
@@ -54,12 +36,12 @@ def _probe_video(video_path):
         timeout=60,
     )
     if proc.returncode != 0:
-        raise RuntimeError(f"ffprobe 失败: {proc.stderr}")
+        raise RuntimeError(f"ffprobe failed: {proc.stderr}")
     data = json.loads(proc.stdout)
     v_stream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
     a_stream = next((s for s in data["streams"] if s["codec_type"] == "audio"), None)
     if v_stream is None:
-        raise RuntimeError("未找到视频流")
+        raise RuntimeError("No video stream found")
 
     width = int(v_stream["width"])
     height = int(v_stream["height"])
@@ -96,7 +78,7 @@ def create_text_overlay(
     fps=None,
 ):
     if not os.path.isfile(video_path):
-        return -1, f"输入视频不存在: {video_path}", ""
+        return -1, f"Input video not found: {video_path}", ""
 
     info = _probe_video(video_path)
     width, height, src_fps, src_duration = info["width"], info["height"], info["fps"], info["duration"]
@@ -138,7 +120,7 @@ def create_text_overlay(
         )
         code, log = _run(cmd, timeout=600)
         if code != 0:
-            return code, f"生成透明叠加层失败:\n{log}", output_folder
+            return code, f"Rendering the transparent overlay failed:\n{log}", output_folder
 
         ext = os.path.splitext(video_path)[1] or ".mp4"
         burned_path = os.path.join(output_folder, f"output_burned{ext}")
@@ -153,7 +135,7 @@ def create_text_overlay(
         )
         code, log = _run(cmd, timeout=1200)
         if code != 0:
-            return code, f"生成合成视频失败:\n{log}", output_folder
+            return code, f"Rendering the burned-in video failed:\n{log}", output_folder
 
         msg = (
             f"已生成 {frame_count} 帧文字动画 (fps={fps}, font={font}, "
@@ -199,7 +181,7 @@ def create_karaoke_captions(
     fps=None,
 ):
     if not os.path.isfile(video_path):
-        return -1, f"输入视频不存在: {video_path}", ""
+        return -1, f"Input video not found: {video_path}", ""
 
     info = _probe_video(video_path)
     width, height, src_fps, src_duration = info["width"], info["height"], info["fps"], info["duration"]
@@ -211,7 +193,7 @@ def create_karaoke_captions(
 
     lines = _group_lines(segments, max_words_per_line)
     if not lines:
-        return -1, "segments 中没有可用的词级时间戳 (words)，请先用 transcribe_audio(word_timestamps=True) 获取", ""
+        return -1, "segments have no word timings; run transcribe_audio(word_timestamps=True) first", ""
 
     if output_folder is None:
         video_name = os.path.splitext(os.path.basename(video_path))[0]
@@ -248,7 +230,7 @@ def create_karaoke_captions(
         )
         code, log = _run(cmd, timeout=600)
         if code != 0:
-            return code, f"生成透明叠加层失败:\n{log}", output_folder
+            return code, f"Rendering the transparent overlay failed:\n{log}", output_folder
 
         ext = os.path.splitext(video_path)[1] or ".mp4"
         burned_path = os.path.join(output_folder, f"output_burned{ext}")
@@ -263,7 +245,7 @@ def create_karaoke_captions(
         )
         code, log = _run(cmd, timeout=1200)
         if code != 0:
-            return code, f"生成合成视频失败:\n{log}", output_folder
+            return code, f"Rendering the burned-in video failed:\n{log}", output_folder
 
         msg = (
             f"已生成 {frame_count} 帧卡拉OK字幕 (fps={fps}, font={font}, size={font_size}, "

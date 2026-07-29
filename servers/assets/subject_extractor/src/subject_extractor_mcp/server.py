@@ -10,12 +10,13 @@ if sys.platform == "win32":
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from framewright_core import setup_logging
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 
 import subject_extractor_mcp.segmenter as segmenter
 
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+setup_logging()
 mcp = FastMCP("subject-extractor-mcp")
 
 IMG_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
@@ -24,10 +25,11 @@ IMG_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
 @mcp.tool()
 def extract_subject(
     input_folder: Annotated[str, Field(description="Folder of frames, e.g. the output of extract_frames_from_video")],
-    style: Annotated[Literal["anime", "general"], Field(description="'anime' for animation/illustration, 'general' for live-action footage")] = "general",
+    style: Annotated[Literal["anime", "general", "general_hq"], Field(description="'anime' for animation, 'general' for live-action, 'general_hq' for slower, sharper live-action edges (BiRefNet)")] = "general",
     output_folder: Annotated[str | None, Field(description="Defaults to '<input_folder>_subject'")] = None,
     with_background: Annotated[bool, Field(description="Also write the background with the subject cut out")] = False,
     threshold: Annotated[float, Field(ge=0.0, le=1.0, description="0 keeps soft edges; >0 binarizes the mask")] = 0.0,
+    temporal_smoothing: Annotated[float, Field(ge=0.0, le=0.9, description="Reduce mask flicker between video frames; 0 = off (use for unrelated stills)")] = 0.5,
     skip_existing: Annotated[bool, Field(description="Skip frames whose output already exists (resume a partial run)")] = True,
 ) -> dict:
     """Cut the main subject out of every frame in a folder and save transparent RGBA PNGs."""
@@ -45,22 +47,26 @@ def extract_subject(
         os.makedirs(background_folder, exist_ok=True)
 
     processed, skipped, failed = 0, 0, []
+    prev = None  # (frame, mask) of the last processed frame, for temporal smoothing
     for name in files:
         stem = os.path.splitext(name)[0]
         out_path = os.path.join(output_folder, f"{stem}.png")
         if skip_existing and os.path.exists(out_path):
             skipped += 1
+            prev = None
             continue
         bg_path = os.path.join(background_folder, f"{stem}.png") if background_folder else None
         try:
-            segmenter.split_subject_and_background(
-                os.path.join(input_folder, name), out_path, bg_path, style=style, threshold=threshold
+            prev = segmenter.split_subject_and_background(
+                os.path.join(input_folder, name), out_path, bg_path, style=style, threshold=threshold,
+                prev=prev, smoothing=temporal_smoothing,
             )
             processed += 1
         except FileNotFoundError as e:
             raise ToolError(str(e))
         except Exception as e:  # keep going; report failures at the end
             logging.exception("Failed on %s", name)
+            prev = None
             failed.append({"frame": name, "error": str(e)})
 
     return {

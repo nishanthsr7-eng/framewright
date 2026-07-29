@@ -1,5 +1,6 @@
 import os
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
+
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 # src/text_overlay_mcp/renderer.py -> src/text_overlay_mcp -> src -> Text_Overlay_MCP -> fonts
 FONTS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "fonts"))
@@ -45,7 +46,7 @@ def list_fonts():
 def _font_entry(name):
     key = (name or "anton").lower().strip()
     if key not in FONT_FILES:
-        raise ValueError(f"未知字体: {name}，可用字体: {list(FONT_FILES.keys())}")
+        raise ValueError(f"Unknown font: {name}. Available: {list(FONT_FILES.keys())}")
     return FONT_FILES[key]
 
 
@@ -74,7 +75,7 @@ def _parse_color(c):
     if len(c) == 8:
         r, g, b, a = int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16), int(c[6:8], 16)
         return (r, g, b, a)
-    raise ValueError(f"无法解析颜色: {c}")
+    raise ValueError(f"Cannot parse colour (use #RRGGBB): {c}")
 
 
 def _gradient_rgba(size, color1, color2, direction="vertical"):

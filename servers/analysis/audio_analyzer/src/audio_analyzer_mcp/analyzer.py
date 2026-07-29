@@ -1,29 +1,12 @@
+import logging
 import os
 import subprocess
 import tempfile
 
-import numpy as np
 import librosa
+import numpy as np
 
 VIDEO_EXTS = {".mp4", ".mkv", ".mov", ".avi", ".webm", ".m4v", ".flv"}
-
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
 
 
 def _load_audio(audio_path, sr=22050, offset=0.0, duration=None):
@@ -32,7 +15,7 @@ def _load_audio(audio_path, sr=22050, offset=0.0, duration=None):
     若输入是视频文件，先用 ffmpeg 提取音轨为临时 wav。
     """
     if not os.path.exists(audio_path):
-        raise FileNotFoundError(f"找不到文件: {audio_path}")
+        raise FileNotFoundError(f"File not found: {audio_path}")
 
     ext = os.path.splitext(audio_path)[1].lower()
     src_path = audio_path
@@ -49,7 +32,7 @@ def _load_audio(audio_path, sr=22050, offset=0.0, duration=None):
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             os.remove(tmp_path)
-            raise RuntimeError(f"ffmpeg 提取音轨失败: {result.stderr[-1000:]}")
+            raise RuntimeError(f"ffmpeg could not extract the audio: {result.stderr[-1000:]}")
         src_path = tmp_path
 
     try:
@@ -287,8 +270,21 @@ _WHISPER_MODELS = {}
 
 def _get_whisper_model(model_size):
     if model_size not in _WHISPER_MODELS:
+        import ctranslate2
         from faster_whisper import WhisperModel
-        _WHISPER_MODELS[model_size] = WhisperModel(model_size, device="cpu", compute_type="int8")
+        model = None
+        # GPU first (CUDA float16); fall back to CPU int8 if CUDA libs are missing
+        if ctranslate2.get_cuda_device_count() > 0:
+            try:
+                model = WhisperModel(model_size, device="cuda", compute_type="float16")
+                # cuBLAS/cuDNN load lazily on the first encode; warm up so a missing DLL falls back here
+                list(model.transcribe(np.zeros(16000, dtype=np.float32), language="en")[0])
+            except Exception as e:
+                model = None
+                logging.warning("CUDA Whisper load failed, using CPU: %s", e)
+        if model is None:
+            model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        _WHISPER_MODELS[model_size] = model
     return _WHISPER_MODELS[model_size]
 
 
@@ -308,7 +304,7 @@ def transcribe_audio(audio_path, model_size="base", language=None, word_timestam
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             os.remove(tmp_path)
-            raise RuntimeError(f"ffmpeg 提取音轨失败: {result.stderr[-1000:]}")
+            raise RuntimeError(f"ffmpeg could not extract the audio: {result.stderr[-1000:]}")
         src_path = tmp_path
 
     try:

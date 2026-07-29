@@ -1,54 +1,40 @@
 import os
 import sys
+from typing import Annotated, Literal
+
+from pydantic import Field
 
 if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-cur_path = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, cur_path + "/..")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from framewright_core import run_tool as _run
+from framewright_core import setup_logging
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
+
 from lut_grading_mcp import grading
 
+setup_logging()
 mcp = FastMCP("lut-grading-mcp")
 
-
-@mcp.tool()
-def list_luts():
-    """
-    列出所有内置的电影级 3D LUT 色彩分级预设及其说明。
-
-    Output: {lut_name: {description, path}, ...}
-    Usage: list_luts()
-    """
-    return grading.list_luts()
+BUILTIN = ", ".join(f"{k} ({v})" for k, v in grading.BUILTIN_LUTS.items())
+STYLE_LUTS = {"general": "cinematic_teal_orange", "anime": "anime_vibrant"}
 
 
-@mcp.tool()
-def apply_lut(input_path, lut, intensity=1.0, output_path=None):
-    """
-    将一个 3D LUT 色彩分级预设应用到视频上，模拟电影调色效果(类似 Premiere/
-    DaVinci Resolve 的 LUT 应用)。
-
-    Input:
-      input_path (str) - 源视频文件路径。
-      lut (str) - 内置 LUT 名称(见 list_luts()，例如 "cinematic_teal_orange"、
-        "warm_vintage"、"cool_blue"、"high_contrast_bw"、"faded_film"、
-        "moody_green"、"bleach_bypass")，或一个自定义 .cube 文件的路径。
-
-    Optional params:
-      intensity (float, 默认 1.0): LUT 效果强度(0-1)，0 表示不变，1 表示完全
-        应用 LUT，中间值与原始画面混合。
-      output_path (str, 默认 None): 输出文件路径。不传则默认为
-        D:\\...\\Output\\<视频名>\\<视频名>_graded.<ext>
-
-    Output: {output_path, lut, intensity}
-    Usage:
-      apply_lut(input_path="D:\\...\\Output\\clip.mp4", lut="cinematic_teal_orange")
-      apply_lut(input_path="D:\\...\\Output\\clip.mp4", lut="D:\\...\\my_lut.cube", intensity=0.6)
-    """
-    return grading.apply_lut(input_path, lut, intensity=intensity, output_path=output_path)
+@mcp.tool(description=f"Colour-grade a video with a 3D LUT. Built-in LUTs: {BUILTIN}. A path to any .cube file also works.")
+def apply_lut(
+    input_path: Annotated[str, Field(description="Source video")],
+    lut: Annotated[str | None, Field(description="Built-in LUT name, or a path to a .cube file; default comes from style")] = None,
+    style: Annotated[Literal["anime", "general"], Field(description="Footage type; picks the default LUT when lut is empty")] = "general",
+    intensity: Annotated[float, Field(ge=0, le=1, description="Blend with the original; 1 is the full LUT")] = 1.0,
+    output_path: Annotated[str | None, Field(description="Default: output/<video>/<video>_graded.<ext>")] = None,
+) -> dict:
+    lut = lut or STYLE_LUTS[style]
+    if lut not in grading.BUILTIN_LUTS and not (lut.lower().endswith(".cube") and os.path.isfile(lut)):
+        raise ToolError(f"Unknown LUT '{lut}'. Use one of: {', '.join(grading.BUILTIN_LUTS)}, or an existing .cube file path.")
+    return _run(grading.apply_lut, input_path, lut, intensity=intensity, output_path=output_path)
 
 
 def main():

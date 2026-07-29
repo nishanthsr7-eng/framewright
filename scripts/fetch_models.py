@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import os
 import platform
 import shutil
 import stat
@@ -39,6 +38,12 @@ MODELS_SPEC = {
         "url": "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx",
         "dest": MODELS / "isnet" / "u2net.onnx",
         "sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+    },
+    "birefnet": {
+        "desc": "BiRefNet-lite matting, sharper hair/edges (style=general_hq, ~224 MB)",
+        "url": "https://huggingface.co/onnx-community/BiRefNet_lite-ONNX/resolve/main/onnx/model.onnx",
+        "dest": MODELS / "isnet" / "birefnet_lite.onnx",
+        "sha256": "5600024376f572a557870a5eb0afb1e5961636bef4e1e22132025467d0f03333",
     },
     "realesrgan": {
         "desc": "Real-ESRGAN ncnn-vulkan upscaler (binary + models)",

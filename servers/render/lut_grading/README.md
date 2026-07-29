@@ -6,7 +6,6 @@ Apply built-in cinematic 3D LUT color grades at adjustable strength.
 
 | Tool | Key inputs | Output |
 |---|---|---|
-| `list_luts` | - | cinematic_teal_orange, warm_vintage, cool_blue, high_contrast_bw, faded_film, moody_green, bleach_bypass |
 | `apply_lut` | `input_path`, `lut`, `intensity`=1.0 | graded video |
 
 All tools return a dict (usually with `output_path`). Outputs default to `output/` at the repo root.

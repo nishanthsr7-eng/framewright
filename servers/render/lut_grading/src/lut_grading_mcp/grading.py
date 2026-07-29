@@ -1,35 +1,21 @@
 import os
 import subprocess
 
+from framewright_core import output_root as _get_output_root
+from framewright_core import run_ffmpeg as _run_ffmpeg
+
 LUTS_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "luts")
 
 BUILTIN_LUTS = {
-    "cinematic_teal_orange": "经典电影感: 阴影偏青色，高光偏橙色",
-    "warm_vintage": "温暖复古: 提升黑位、暖色调、轻微降低饱和度",
-    "cool_blue": "冷调蓝色: 增加蓝色、轻微降低高光饱和度，适合夜景/科技感",
-    "high_contrast_bw": "高对比度黑白",
-    "faded_film": "褪色胶片感: 提升黑位、压缩高光、降低饱和度",
-    "moody_green": "暗绿色调: 压暗阴影并偏绿，适合悬疑/惊悚氛围",
-    "bleach_bypass": "漂白效果: 大幅降低饱和度并提升对比度，适合战争/动作片",
+    "cinematic_teal_orange": "teal shadows, orange highlights",
+    "warm_vintage": "lifted blacks, warm, slightly desaturated",
+    "cool_blue": "blue cast for night or tech scenes",
+    "high_contrast_bw": "high-contrast black and white",
+    "faded_film": "lifted blacks, soft highlights, low saturation",
+    "moody_green": "dark green shadows for suspense",
+    "bleach_bypass": "desaturated, high contrast, gritty",
+    "anime_vibrant": "punchier cel colours for animation",
 }
-
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
 
 
 def _default_output_path(input_path, suffix, ext=None):
@@ -44,20 +30,13 @@ def _probe(path):
     cmd = ["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", path]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"ffprobe 失败: {result.stderr[-1000:]}")
+        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
     import json
     data = json.loads(result.stdout)
     has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
     has_video = any(s["codec_type"] == "video" for s in data["streams"])
     duration = float(data["format"].get("duration") or 0.0)
     return {"has_video": has_video, "has_audio": has_audio, "duration": duration}
-
-
-def _run_ffmpeg(args, timeout=1800):
-    cmd = ["ffmpeg", "-y"] + args
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg 失败: {result.stderr[-1500:]}")
 
 
 def _escape_filter_path(path):
@@ -84,11 +63,11 @@ def _resolve_lut_path(lut):
 
 def apply_lut(input_path, lut, intensity=1.0, output_path=None):
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f"找不到文件: {input_path}")
+        raise FileNotFoundError(f"File not found: {input_path}")
 
     info = _probe(input_path)
     if not info["has_video"]:
-        raise RuntimeError(f"文件没有视频流: {input_path}")
+        raise RuntimeError(f"File has no video stream: {input_path}")
 
     lut_path = _resolve_lut_path(lut)
     lut_escaped = _escape_filter_path(lut_path)
