@@ -60,6 +60,14 @@ foreach ($m in $map) {
     }
 }
 
+# Framewright_Build_Plan.lua can't read env vars or files in Resolve's sandbox: bake in the repo path.
+$fw = Join-Path $Dest "Scripts\Edit\Framewright_Build_Plan.lua"
+if (-not $Uninstall -and -not $DryRun -and (Test-Path $fw)) {
+    $root = (Split-Path $src -Parent) -replace "\\", "/"
+    $text = [IO.File]::ReadAllText($fw).Replace("__FRAMEWRIGHT_ROOT__", $root)
+    [IO.File]::WriteAllText($fw, $text, (New-Object Text.UTF8Encoding $false))  # no BOM: Lua rejects it
+}
+
 $verb = if ($Uninstall) { "removed" } else { "installed" }
 if ($DryRun) { $verb = "would be $verb" }
 Write-Host "$count files $verb."

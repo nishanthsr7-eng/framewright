@@ -1,55 +1,62 @@
-# Prompt: edit plan → DaVinci Resolve script
+# Prompt: edit plan → DaVinci Resolve Lua script
 
 Works with any LLM (ChatGPT, Claude, Gemini, local models). Copy everything below the line, then paste your edit plan JSON at the end. The plan format is in [docs/edit-plan.md](../docs/edit-plan.md); an example is in [examples/edit_plan.example.json](../examples/edit_plan.example.json).
 
-Save the reply as a `.py` file in Resolve's `Fusion/Scripts/Edit/` folder and run it from **Workspace → Scripts** (works in Resolve Free).
+Save the reply as a `.lua` file in Resolve's `Fusion/Scripts/Edit/` folder, restart Resolve, and run it from **Workspace → Scripts → Edit**. Lua works in Resolve Free without any Python install. See [docs/resolve-free-scripts.md](../docs/resolve-free-scripts.md) for how scripts get into Resolve and how to check they ran.
+
+No LLM needed for the standard build: `resolve/scripts/Edit/Framewright_Build_Plan.lua` already builds any plan. Use this prompt when you want a custom script (different track layout, extra markers, partial rebuilds).
 
 ---
 
-You are writing a Python script for DaVinci Resolve's scripting API. It builds a timeline from the edit plan JSON at the end of this message.
+You are writing a Lua script for DaVinci Resolve 21's scripting API. It runs from Workspace → Scripts inside Resolve and builds a timeline from the edit plan at the end of this message.
 
 ## Output
 
-- Reply with **one Python code block only**, no explanation.
-- Python 3, standard library only. Embed the plan as a dict literal named `PLAN`.
+- Reply with **one Lua code block only**, no explanation.
+- Plain Lua 5.1. Embed the plan as a table literal: `local PLAN = { ... }` (convert the JSON; arrays become `{ ... }`, objects become `{ key = value }`, use `["in"]` for the `in` key because `in` is a Lua keyword).
+- Use absolute file paths with forward slashes.
 
-## Connecting
+## Sandbox rules (Resolve 21.1 Free)
 
-```python
-try:
-    resolve = app.GetResolve()  # when run from Workspace → Scripts
-except NameError:
-    import DaVinciResolveScript as dvr  # when run from a terminal (Studio)
-    resolve = dvr.scriptapp("Resolve")
-```
+- Connect with the global: `local resolve = resolve or (fusion and fusion:GetResolve())`. `Resolve()` may return nil.
+- `io` does not exist. Do not read or write files, and do not call `require`.
+- Lists returned by the API can contain stray number values. Iterate them with this helper and nothing else:
+  ```lua
+  local function each(t)
+      local out = {}
+      for _, v in pairs(t or {}) do if type(v) ~= "number" and type(v) ~= "string" then out[#out + 1] = v end end
+      return ipairs(out)
+  end
+  ```
+- `print` output only shows if the Console is open. Collect messages in a table, and if anything failed, end with `error("report:\n" .. table.concat(msgs, "\n"))` so it is logged to `ResolveDebug.txt`.
 
 ## Steps the script must do
 
-1. Get the project manager and the current project. If there is none, create one named `PLAN["project"]["name"]`.
-2. Set `timelineFrameRate`, `timelineResolutionWidth` and `timelineResolutionHeight` with `project.SetSetting(...)` **before** creating the timeline. Values are strings.
-3. Import every unique file from `clips`, `music` and other plan entries with `media_pool.ImportMedia([...])`. Convert paths to absolute paths with `os.path.abspath`. Map each path to its `MediaPoolItem`.
-4. Create the timeline with `media_pool.CreateEmptyTimeline(name)` and make it current with `project.SetCurrentTimeline(timeline)`.
-5. Place clips with `media_pool.AppendToTimeline([...])`, one dict per clip:
-   - `mediaPoolItem`: the imported item
-   - `startFrame`, `endFrame`: source in and out, `round(seconds * source_fps)` (read the source fps with `item.GetClipProperty("FPS")`)
+1. `local project = resolve:GetProjectManager():GetCurrentProject()`. If nil, `error` with "Open a project first".
+2. `project:SetSetting("timelineFrameRate", ...)`, `"timelineResolutionWidth"`, `"timelineResolutionHeight"` with **string** values, before creating the timeline.
+3. `local mp = project:GetMediaPool()`. Import every unique file from `clips` and `music` once with `mp:ImportMedia({path1, path2, ...})`. Map each to its item by `item:GetClipProperty("File Path")` (compare lowercased, with `\` turned into `/`). Reuse items already in the pool.
+4. Create the timeline with `mp:CreateEmptyTimeline(name)`. If the name is taken (`project:GetTimelineByIndex(i):GetName()`), add `_2`, `_3`, ... Then `project:SetCurrentTimeline(timeline)`. Add video tracks with `timeline:AddTrack("video")` until the highest plan track exists.
+5. Place each clip, sorted by `at`, with `mp:AppendToTimeline({{ ... }})`:
+   - `mediaPoolItem`: the item
+   - `startFrame`: `floor(in * src_fps + 0.5)`, where `src_fps = tonumber(item:GetClipProperty("FPS"))`
+   - `endFrame`: `startFrame + length_frames - 1`. `length_frames` is the clip's slot on the timeline, `floor((at + (out - in) / speed) * fps + 0.5) - floor(at * fps + 0.5)`, converted to source frames (`* src_fps / fps`). The API cannot retime, so a slowed clip is placed at 1x for its full slot.
    - `trackIndex`: the plan's `track`
-   - `recordFrame`: `timeline.GetStartFrame() + round(at * fps)`
-   - `mediaType`: `1` for the video part of video clips
-6. Place the music on audio track 1 at the timeline start, with `mediaType` `2`.
-7. Add each plan marker with `timeline.AddMarker(frame, color, name, note, 1)`. `frame` is relative to the timeline start: `round(at * fps)`.
-8. Titles: move the playhead with `timeline.SetCurrentTimecode(...)` to the title's `at`, then call `timeline.InsertFusionTitleIntoTimeline(template)`. If that returns `None`, add a Yellow marker named `TITLE: <text>` instead.
-9. The API cannot add transitions, effects or speed changes. For each one, add a marker at the clip's `at` so the editor can apply it by hand:
-   - Cyan `FX: <effect>` for effects
-   - Pink `TRANSITION: <type> <frames>f` for transitions
-   - Purple `SPEED: <speed>x` when speed ≠ 1.0
-10. At the end, print a summary: the number of clips placed, the markers added, and anything skipped.
+   - `recordFrame`: `timeline:GetStartFrame() + floor(at * fps + 0.5)`
+   - `mediaType`: `1` (video only)
+6. Place the music on audio track 1 at `timeline:GetStartFrame()` with `mediaType = 2`, cut to the video length.
+7. Markers: `timeline:AddMarker(frame, color, name, "", 1)` with `frame = floor(at * fps + 0.5)` (relative to the timeline start). If it returns false, try `frame + 1` up to 10 times.
+8. The API cannot add transitions, effects, speed changes or titles reliably. For each, add a marker at the clip's `at`:
+   - Cyan `FX: <effect>`, Pink `TRANSITION: <type>`, Purple `SPEED: <speed>x (placed at 1x)`, Yellow `TITLE: <text>`
+   - Then the plan's own `markers` with their colors.
+9. Check: for each clip, find the timeline item on its track whose `item:GetStart() - timeline:GetStartFrame()` equals the planned frame, and whose `item:GetDuration()` is within 1 frame of the slot. Count misses.
+10. If any import, placement or check failed, `error(...)` with the collected report.
 
 ## Rules
 
-- Times in the plan are seconds. Convert them to frames with `PLAN["project"]["fps"]`, except source in/out frames, which use the source clip's fps.
-- Check each API call. If it returns `None` or `False`, print a clear message and continue with the next item. Never crash halfway.
-- Do not delete or change existing timelines. If the timeline name is taken, add `_2`, `_3` and so on.
-- Use only API calls named in this prompt.
+- Plan times are seconds; timeline frames use `PLAN.project.fps`, source frames use the clip's own fps.
+- Check every API result. On nil/false, record a message and continue. Never stop halfway except in step 1.
+- Never delete or change existing timelines or media.
+- Use only the API calls named in this prompt.
 
 ## Edit plan
 

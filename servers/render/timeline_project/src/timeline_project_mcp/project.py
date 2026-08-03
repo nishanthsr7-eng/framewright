@@ -4,25 +4,10 @@ import shutil
 import subprocess
 import tempfile
 
+from framewright_core import output_root as _get_output_root
+from framewright_core import run_ffmpeg as _run_ffmpeg
+
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".tif", ".tiff"}
-
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
 
 
 def _probe(path):
@@ -32,7 +17,7 @@ def _probe(path):
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"ffprobe 失败: {result.stderr[-1000:]}")
+        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
     data = json.loads(result.stdout)
     vstream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
     has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
@@ -51,21 +36,14 @@ def _probe(path):
     return {"width": width, "height": height, "duration": duration, "fps": fps, "has_audio": has_audio}
 
 
-def _run_ffmpeg(args, timeout=1800):
-    cmd = ["ffmpeg", "-y"] + args
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg 失败: {result.stderr[-1500:]}")
-
-
 def _is_image(path):
     return os.path.splitext(path)[1].lower() in IMAGE_EXTS
 
 
 def _load_project(project_path):
     if not os.path.exists(project_path):
-        raise FileNotFoundError(f"找不到项目文件: {project_path}")
-    with open(project_path, "r", encoding="utf-8") as f:
+        raise FileNotFoundError(f"Project file not found: {project_path}")
+    with open(project_path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -94,7 +72,7 @@ def add_clip(project_path, file, start=0.0, end=None, transition_in=None, transi
     transition_in_duration: 转场持续时间(秒)，默认 0.5。
     """
     if not os.path.exists(file):
-        raise FileNotFoundError(f"找不到文件: {file}")
+        raise FileNotFoundError(f"File not found: {file}")
 
     project = _load_project(project_path)
 
@@ -118,7 +96,7 @@ def remove_clip(project_path, index):
     """
     project = _load_project(project_path)
     if index < 0 or index >= len(project["clips"]):
-        raise IndexError(f"索引超出范围: {index}, 当前共有 {len(project['clips'])} 个片段")
+        raise IndexError(f"Index {index} out of range; there are {len(project['clips'])} clips")
     removed = project["clips"].pop(index)
     _save_project(project_path, project)
     return {"removed": removed, "clip_count": len(project["clips"])}
@@ -131,7 +109,7 @@ def add_overlay(project_path, file, x=0, y=0, width=None, height=None, opacity=1
     时间区间 start_time/end_time 是相对于最终渲染出的整段视频的时间轴。
     """
     if not os.path.exists(file):
-        raise FileNotFoundError(f"找不到文件: {file}")
+        raise FileNotFoundError(f"File not found: {file}")
 
     project = _load_project(project_path)
     overlay = {
@@ -156,7 +134,7 @@ def remove_overlay(project_path, index):
     """
     project = _load_project(project_path)
     if index < 0 or index >= len(project["overlays"]):
-        raise IndexError(f"索引超出范围: {index}, 当前共有 {len(project['overlays'])} 个叠加层")
+        raise IndexError(f"Index {index} out of range; there are {len(project['overlays'])} overlays")
     removed = project["overlays"].pop(index)
     _save_project(project_path, project)
     return {"removed": removed, "overlay_count": len(project["overlays"])}
@@ -261,7 +239,7 @@ def _apply_overlays(base_path, overlays, tmp):
         idx = j + 1
         file_path = layer["file"]
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f"找不到叠加层文件: {file_path}")
+            raise FileNotFoundError(f"Overlay file not found: {file_path}")
 
         start = max(0.0, float(layer.get("start_time", 0.0)))
         end = float(layer["end_time"]) if layer.get("end_time") is not None else total
@@ -349,7 +327,7 @@ def render_project(project_path, output_path=None):
     """
     project = _load_project(project_path)
     if not project["clips"]:
-        raise ValueError("项目没有任何片段")
+        raise ValueError("The timeline has no clips")
 
     w, h, fps = project["width"], project["height"], project["fps"]
 

@@ -5,24 +5,8 @@ import tempfile
 
 import librosa
 import numpy as np
-
-
-def _find_tools_dir():
-    path = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        parent, name = os.path.split(path)
-        if name == "servers":
-            return path
-        if parent == path:
-            return None
-        path = parent
-
-
-def _get_output_root():
-    tools_dir = _find_tools_dir()
-    if tools_dir is not None:
-        return os.path.join(os.path.dirname(tools_dir), "output")
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "output")
+from framewright_core import output_root as _get_output_root
+from framewright_core import run_ffmpeg as _run_ffmpeg
 
 
 def _default_output_path(music_path):
@@ -36,7 +20,7 @@ def _probe(path):
     cmd = ["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", path]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"ffprobe 失败: {result.stderr[-1000:]}")
+        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
     data = json.loads(result.stdout)
     vstream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
     width = int(vstream["width"]) if vstream else None
@@ -50,13 +34,6 @@ def _probe(path):
     return {"width": width, "height": height, "duration": duration, "fps": fps}
 
 
-def _run_ffmpeg(args, timeout=1800):
-    cmd = ["ffmpeg", "-y"] + args
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg 失败: {result.stderr[-1500:]}")
-
-
 def detect_beats(music_path):
     y, sr = librosa.load(music_path, sr=22050, mono=True)
     tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
@@ -67,14 +44,28 @@ def detect_beats(music_path):
             "duration": round(float(duration), 3)}
 
 
+def _refine_to_onsets(y, sr, beat_times, window=0.07):
+    """Move each beat to the nearest fine-grained onset (5.8 ms hop) within `window` seconds."""
+    hop = 128
+    env = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop)
+    onsets = librosa.onset.onset_detect(onset_envelope=env, sr=sr, hop_length=hop, units="time")
+    if len(onsets) == 0:
+        return beat_times
+    refined = []
+    for t in beat_times:
+        o = onsets[np.argmin(np.abs(onsets - t))]
+        refined.append(o if abs(o - t) <= window else t)
+    return np.array(refined)
+
+
 def generate_beat_synced_video(clip_paths, music_path, output_path=None, beats_per_cut=1, max_duration=None):
     if not clip_paths:
-        raise ValueError("clip_paths 不能为空")
+        raise ValueError("clip_paths is empty")
     for p in clip_paths:
         if not os.path.exists(p):
-            raise FileNotFoundError(f"找不到视频文件: {p}")
+            raise FileNotFoundError(f"Video not found: {p}")
     if not os.path.exists(music_path):
-        raise FileNotFoundError(f"找不到音乐文件: {music_path}")
+        raise FileNotFoundError(f"Music file not found: {music_path}")
 
     beats_per_cut = max(1, int(beats_per_cut))
 
@@ -82,7 +73,8 @@ def generate_beat_synced_video(clip_paths, music_path, output_path=None, beats_p
     tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
     beat_times = librosa.frames_to_time(beat_frames, sr=sr)
     if len(beat_times) < 2:
-        raise RuntimeError("未能从音乐中检测到足够的节拍")
+        raise RuntimeError("Not enough beats found in the music; try a track with a clearer rhythm")
+    beat_times = _refine_to_onsets(y, sr, beat_times)
 
     cut_times = beat_times[::beats_per_cut]
     if cut_times[0] > 0.01:
@@ -98,14 +90,16 @@ def generate_beat_synced_video(clip_paths, music_path, output_path=None, beats_p
         if cut_times[-1] < music_duration:
             cut_times = np.append(cut_times, music_duration)
 
-    segment_durations = np.diff(cut_times)
-    segment_durations = segment_durations[segment_durations > 0.05]
-    if len(segment_durations) == 0:
-        raise RuntimeError("未能生成任何有效片段")
-
     infos = [_probe(p) for p in clip_paths]
     w, h = infos[0]["width"], infos[0]["height"]
     fps = infos[0]["fps"] or 30
+
+    # Snap absolute cut times to frame numbers so rounding never accumulates.
+    cut_frames = np.unique(np.round(cut_times * fps).astype(int))
+    segment_frames = np.diff(cut_frames)
+    if len(segment_frames) == 0:
+        raise RuntimeError("No usable segments were produced; check the clips are long enough")
+    segment_durations = segment_frames / fps
 
     if output_path is None:
         output_path = _default_output_path(music_path)
@@ -116,18 +110,19 @@ def generate_beat_synced_video(clip_paths, music_path, output_path=None, beats_p
 
     with tempfile.TemporaryDirectory() as tmp:
         seg_files = []
-        for i, dur in enumerate(segment_durations):
+        for i, (n_frames, dur) in enumerate(zip(segment_frames, segment_durations)):
             ci = i % len(clip_paths)
             clip_dur = infos[ci]["duration"]
-            dur = min(float(dur), clip_dur)
             start = cursors[ci]
             if start + dur > clip_dur:
                 start = 0.0
             cursors[ci] = start + dur
 
             seg_path = os.path.join(tmp, f"seg_{i:03d}.mp4")
-            vf = f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps={fps},setsar=1"
-            _run_ffmpeg(["-ss", f"{start}", "-i", clip_paths[ci], "-t", f"{dur}",
+            # tpad clones the last frame if the clip is shorter than the segment.
+            vf = (f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps={fps},setsar=1,"
+                  f"tpad=stop_mode=clone:stop_duration={dur:.3f}")
+            _run_ffmpeg(["-ss", f"{start}", "-i", clip_paths[ci], "-frames:v", str(int(n_frames)),
                          "-vf", vf, "-an", "-c:v", "libx264", "-preset", "fast",
                          "-pix_fmt", "yuv420p", seg_path])
             seg_files.append(seg_path)

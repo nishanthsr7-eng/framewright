@@ -111,7 +111,7 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual((video[0]["startFrame"], video[0]["endFrame"]), (72, 119))
         self.assertTrue(any(p.get("mediaType") == 2 for p in tl.placed))
         names = [n for _, n in tl.markers.values()]
-        self.assertIn("SPEED: 0.5x", names)
+        self.assertIn("SPEED: 0.5x (placed at 1x)", names)
         self.assertIn("TITLE: THE DROP", names)
         self.assertIn("TRANSITION: Flash White 12f", names)
         self.assertEqual(len(tl.markers), report["markers"])
@@ -125,6 +125,13 @@ class BridgeTest(unittest.TestCase):
         report = fw.build_from_plan(Resolve(), self.plan, base_dir=self.tmp.name, log=lambda *_: None)
         self.assertEqual(report["clips_placed"], 4)
         self.assertTrue(report["skipped"][0].startswith("missing file"))
+
+    def test_absolute_forward_slash_paths(self):
+        # tools write paths like D:/x/a.mp4 on Windows; they must still match imported items
+        for c in self.plan["clips"]:
+            c["file"] = Path(self.tmp.name, c["file"]).as_posix()
+        report = fw.build_from_plan(Resolve(), self.plan, base_dir="/elsewhere", log=lambda *_: None)
+        self.assertEqual(report["clips_placed"], 5)
 
     def test_time_helpers(self):
         self.assertEqual(fw.to_srt_time(3661.5), "01:01:01,500")

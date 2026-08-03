@@ -1,154 +1,120 @@
+import logging
 import os
 import sys
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, Field
 
 if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-cur_path = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, cur_path + "/..")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from framewright_core import setup_logging
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
+
+from timeline_project_mcp import plan_render
 from timeline_project_mcp import project as proj
 
+setup_logging()
 mcp = FastMCP("timeline-project-mcp")
 
-
-@mcp.tool()
-def create_project(project_path, width=1920, height=1080, fps=30):
-    """
-    创建一个新的剪辑项目文件(JSON 格式)，初始为空的主时间轴和空的叠加层列表。
-    后续调用 add_clip / add_overlay 向该文件追加内容，最后调用 render_project
-    一次性渲染为最终视频。
-
-    Input: project_path (str) - 项目 JSON 文件的保存路径，例如
-      "D:\\...\\Output\\my_project.json"。
-
-    Optional params:
-      width/height (int, 默认 1920x1080): 最终输出视频的画布尺寸。
-      fps (number, 默认 30): 最终输出视频的帧率。
-
-    Output: 新创建的项目内容 {width, height, fps, clips: [], overlays: []}
-    Usage:
-      create_project(project_path="D:\\...\\Output\\my_project.json", width=1080, height=1920)
-    """
-    return proj.create_project(project_path, width=width, height=height, fps=fps)
+# Same xfade names as effects-mcp.
+Transition = Literal[
+    "fade", "fadeblack", "fadewhite", "dissolve", "pixelize", "wipeleft", "wiperight", "wipeup", "wipedown",
+    "slideleft", "slideright", "slideup", "slidedown", "smoothleft", "smoothright", "smoothup", "smoothdown",
+    "circlecrop", "rectcrop", "circleopen", "circleclose", "vertopen", "vertclose", "horzopen", "horzclose",
+    "diagtl", "diagtr", "diagbl", "diagbr", "hlslice", "hrslice", "vuslice", "vdslice", "hblur", "distance",
+    "zoomin", "hlwind", "hrwind", "vuwind", "vdwind", "coverleft", "coverright", "coverup", "coverdown",
+    "revealleft", "revealright", "revealup", "revealdown", "wipetl", "wipetr", "wipebl", "wipebr",
+]
 
 
-@mcp.tool()
-def add_clip(project_path, file, start=0.0, end=None, transition_in=None, transition_in_duration=0.5):
-    """
-    向项目主时间轴末尾追加一个片段(视频或图片)，按添加顺序依次播放。
+class Clip(BaseModel):
+    file: str = Field(description="Video or image")
+    start: float = Field(0.0, ge=0, description="In-point in the source, seconds")
+    end: float | None = Field(None, gt=0, description="Out-point; default is the whole video, or 5 s for images")
+    transition_in: Transition | None = Field(None, description="Transition from the previous clip")
+    transition_in_duration: float = Field(0.5, gt=0, le=5)
 
-    Input:
-      project_path (str) - 项目 JSON 文件路径(须已用 create_project 创建)。
-      file (str) - 片段的视频或图片文件路径。
 
-    Optional params:
-      start (number, 默认 0.0): 从源文件的第几秒开始截取。
-      end (number, 默认 None): 截取到源文件的第几秒结束。不传则视频默认使用
-        整个文件时长，图片默认使用 5 秒。
-      transition_in (str, 默认 None): 与上一个片段之间使用的转场效果名称
-        (例如 "fade"、"dissolve"、"wipeleft"、"slideup" 等，参考 effects-mcp
-        的 list_transitions())。对项目中的第一个片段无效。
-      transition_in_duration (number, 默认 0.5): 转场持续时间(秒)。
-
-    Output: {index, clip, clip_count}
-    Usage:
-      add_clip(project_path="D:\\...\\my_project.json", file="D:\\...\\clip1.mp4")
-      add_clip(project_path="D:\\...\\my_project.json", file="D:\\...\\clip2.mp4",
-               transition_in="fade", transition_in_duration=1.0)
-    """
-    return proj.add_clip(project_path, file, start=start, end=end,
-                          transition_in=transition_in, transition_in_duration=transition_in_duration)
+class Overlay(BaseModel):
+    file: str = Field(description="Image or video with alpha (e.g. overlay.webm)")
+    x: int = Field(0, description="Left edge in pixels")
+    y: int = Field(0, description="Top edge in pixels")
+    width: int | None = Field(None, description="Scale width; -1 keeps aspect")
+    height: int | None = Field(None, description="Scale height; -1 keeps aspect")
+    opacity: float = Field(1.0, ge=0, le=1)
+    start_time: float = Field(0.0, ge=0, description="Seconds on the final timeline")
+    end_time: float | None = Field(None, gt=0, description="Default: to the end")
+    audio: bool = Field(False, description="Mix in this overlay's audio")
 
 
 @mcp.tool()
-def remove_clip(project_path, index):
-    """
-    从项目主时间轴中删除第 index 个片段(从 0 开始计数)。
-
-    Input: project_path (str), index (int)
-    Output: {removed, clip_count}
-    Usage: remove_clip(project_path="D:\\...\\my_project.json", index=2)
-    """
-    return proj.remove_clip(project_path, index)
-
-
-@mcp.tool()
-def add_overlay(project_path, file, x=0, y=0, width=None, height=None, opacity=1.0,
-                start_time=0.0, end_time=None, audio=False):
-    """
-    向项目添加一个叠加层(图片、贴纸、文字图层、透明背景视频等)，叠加在最终
-    合成画面之上。时间区间 start_time/end_time 相对于渲染出的整段视频时间轴
-    (而不是主时间轴上某个片段内部)。
-
-    Input:
-      project_path (str) - 项目 JSON 文件路径。
-      file (str) - 叠加层文件路径(图片，或带透明通道的视频如 webm/mov)。
-
-    Optional params:
-      x/y (int, 默认 0): 叠加层左上角在画布上的像素坐标。
-      width/height (int, 默认 None): 缩放叠加层到指定像素尺寸。传 -1 表示
-        按比例自动计算另一边。不传则使用原始尺寸。
-      opacity (number, 默认 1.0): 不透明度(0.0-1.0)。
-      start_time/end_time (number, 默认 0.0 / None): 叠加层在最终视频中出现的
-        起止时间(秒)。end_time 不传则持续到视频结尾。
-      audio (bool, 默认 False): 是否混入该叠加层文件自身的音轨(仅对视频
-        文件有效，图片忽略)。
-
-    Output: {index, overlay, overlay_count}
-    Usage:
-      add_overlay(project_path="D:\\...\\my_project.json", file="D:\\...\\logo.png",
-                   x=20, y=20, width=200, start_time=0, end_time=5)
-    """
-    return proj.add_overlay(project_path, file, x=x, y=y, width=width, height=height,
-                             opacity=opacity, start_time=start_time, end_time=end_time, audio=audio)
+def render_timeline(
+    clips: Annotated[list[Clip], Field(min_length=1, description="Clips played in order")],
+    overlays: Annotated[list[Overlay], Field(description="Layers over the whole timeline, bottom to top")] = [],
+    width: Annotated[int, Field(ge=16, le=7680, description="Canvas width")] = 1920,
+    height: Annotated[int, Field(ge=16, le=4320, description="Canvas height")] = 1080,
+    fps: Annotated[float, Field(gt=0, le=120, description="Output frame rate")] = 30,
+    output_path: Annotated[str | None, Field(description="Default: output/timeline/timeline_render.mp4")] = None,
+    project_path: Annotated[str | None, Field(description="Also save the timeline as JSON here; default: output/timeline/timeline.json")] = None,
+) -> dict:
+    """Render a simple edit without Resolve: clips in order with transitions, then overlays, to one mp4.
+    For a full NLE timeline, use the Resolve bridge instead."""
+    for i, c in enumerate(clips):
+        if c.end is not None and c.end <= c.start:
+            raise ToolError(f"clips[{i}]: end must be after start")
+    for i, o in enumerate(overlays):
+        if o.end_time is not None and o.end_time <= o.start_time:
+            raise ToolError(f"overlays[{i}]: end_time must be after start_time")
+    try:
+        if project_path is None:
+            out_dir = os.path.dirname(output_path) if output_path else os.path.join(proj._get_output_root(), "timeline")
+            os.makedirs(out_dir, exist_ok=True)
+            project_path = os.path.join(out_dir, "timeline.json")
+        proj.create_project(project_path, width=width, height=height, fps=fps)
+        for c in clips:
+            proj.add_clip(project_path, **c.model_dump())
+        for o in overlays:
+            proj.add_overlay(project_path, **o.model_dump())
+        result = proj.render_project(project_path, output_path=output_path)
+        result["project_path"] = project_path
+        return result
+    except FileNotFoundError as e:
+        raise ToolError(f"{e}. Check the path exists.")
+    except (ValueError, RuntimeError) as e:
+        raise ToolError(str(e))
+    except Exception as e:
+        logging.exception("Tool failed")
+        raise ToolError(f"{type(e).__name__}: {e}")
 
 
 @mcp.tool()
-def remove_overlay(project_path, index):
-    """
-    从项目中删除第 index 个叠加层(从 0 开始计数)。
-
-    Input: project_path (str), index (int)
-    Output: {removed, overlay_count}
-    Usage: remove_overlay(project_path="D:\\...\\my_project.json", index=0)
-    """
-    return proj.remove_overlay(project_path, index)
-
-
-@mcp.tool()
-def get_project(project_path):
-    """
-    读取并返回项目的完整内容(画布尺寸/帧率、所有片段、所有叠加层)，并附带
-    根据片段时长和转场估算的总时长(estimated_duration)，渲染前用于检查项目结构。
-
-    Input: project_path (str)
-    Output: {width, height, fps, clips, overlays, estimated_duration}
-    Usage: get_project(project_path="D:\\...\\my_project.json")
-    """
-    return proj.get_project(project_path)
-
-
-@mcp.tool()
-def render_project(project_path, output_path=None):
-    """
-    渲染整个项目为最终视频文件: 依次将每个片段裁剪并缩放/填充到统一的画布
-    尺寸和帧率，应用片段之间设置的转场效果(xfade/acrossfade)，再叠加所有
-    叠加层(图片/贴纸/透明视频，支持时间区间、位置、缩放、透明度)，输出为
-    一个 mp4 文件。
-
-    Input: project_path (str) - 已通过 add_clip/add_overlay 配置好的项目文件。
-
-    Optional params:
-      output_path (str, 默认 None): 输出文件路径。不传则默认为
-        D:\\...\\Output\\<项目名>\\<项目名>_render.mp4
-
-    Output: {output_path, duration, clip_count, overlay_count}
-    Usage: render_project(project_path="D:\\...\\my_project.json")
-    """
-    return proj.render_project(project_path, output_path=output_path)
+def render_plan(
+    plan_path: Annotated[str, Field(description="Edit plan JSON (docs/edit-plan.md), e.g. from auto_amv_plan")],
+    output_path: Annotated[str | None, Field(description="Default: output/plans/<plan>.mp4")] = None,
+    platform: Annotated[Literal["none", "tiktok"], Field(description="tiktok: center-crop to 1080x1920; titles are drawn after the crop")] = "none",
+    base_dir: Annotated[str | None, Field(description="Folder relative plan paths resolve against; default is the repo root")] = None,
+    crf: Annotated[int, Field(ge=0, le=40, description="x264 quality; lower is better")] = 18,
+) -> dict:
+    """Render an edit plan to MP4 without Resolve: frame-exact cuts on track 1, speed, music,
+    Flash White / Screen Shake on marked clips, and plan titles. Run validate_plan first."""
+    if not os.path.isfile(plan_path):
+        raise ToolError(f"Plan not found: {plan_path}. Create one with build_edit_plan or auto_amv_plan.")
+    try:
+        return plan_render.render_plan(plan_path, output_path=output_path, platform=platform,
+                                       base_dir=base_dir, crf=crf)
+    except FileNotFoundError as e:
+        raise ToolError(f"Missing {e}. Check paths, or pass base_dir.")
+    except (KeyError, TypeError) as e:
+        raise ToolError(f"Plan is missing or has a bad field ({e}). Run validate_plan and fix it.")
+    except (ValueError, RuntimeError) as e:
+        raise ToolError(str(e))
+    except Exception as e:
+        logging.exception("Tool failed")
+        raise ToolError(f"{type(e).__name__}: {e}")
 
 
 def main():

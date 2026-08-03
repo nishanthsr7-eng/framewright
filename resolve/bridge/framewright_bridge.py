@@ -245,7 +245,8 @@ def load_plan(path) -> dict:
 def build_from_plan(resolve, plan: dict, base_dir=".", log=print) -> dict:
     """Build a timeline from an edit plan (docs/edit-plan.md). Never stops on one bad item."""
     base = Path(base_dir)
-    absp = lambda p: str(p if os.path.isabs(p) else (base / p).resolve())
+    # abspath normalises separators so keys match import_media's (D:/x and D:\x are the same file)
+    absp = lambda p: os.path.abspath(p if os.path.isabs(p) else base / p)
     proj_cfg = plan.get("project", {})
     fps = float(proj_cfg.get("fps", 24))
     report = {"clips_placed": 0, "markers": 0, "skipped": []}
@@ -267,10 +268,15 @@ def build_from_plan(resolve, plan: dict, base_dir=".", log=print) -> dict:
 
     for c in sorted(clips, key=lambda c: c.get("at", 0)):
         item = items.get(absp(c["file"]))
-        if item is None:
+        if item is None:  # already reported as a missing file
             continue
         speed = float(c.get("speed", 1.0))
-        ti = place_clip(mp, timeline, item, c["in"], c["out"], c["at"], fps, c.get("track", 1))
+        # Scripts can't retime, so place the slot length at 1x (no gap) and mark the speed.
+        out = c["in"] + (c["out"] - c["in"]) / speed
+        frames = int(item.GetClipProperty("Frames") or 0)
+        if frames:
+            out = min(out, frames / clip_fps(item, fps))
+        ti = place_clip(mp, timeline, item, c["in"], out, c["at"], fps, c.get("track", 1))
         if ti is None:
             report["skipped"].append(f"could not place {c['file']} at {c['at']}s")
             continue
@@ -279,8 +285,8 @@ def build_from_plan(resolve, plan: dict, base_dir=".", log=print) -> dict:
         tr = c.get("transition_in")
         if tr:
             notes.append(("Pink", f"TRANSITION: {tr['type']} {tr.get('frames', '')}f".strip()))
-        if speed != 1.0 and not set_speed(ti, speed):
-            notes.append(("Purple", f"SPEED: {speed}x"))
+        if speed != 1.0:
+            notes.append(("Purple", f"SPEED: {speed}x (placed at 1x)"))
         for color, name in notes:
             report["markers"] += add_marker(timeline, c["at"], fps, color, name)
 
