@@ -6,7 +6,6 @@ Render bold, animated editing-style titles and word-by-word karaoke captions ont
 
 | Tool | Key inputs | Output |
 |---|---|---|
-| `list_fonts` | - | bundled font names (anton, bebas-neue, montserrat-extrabold, oswald-bold, poppins-extrabold) |
 | `add_text_overlay` | `video_path`, `text`, `font`, `position` top/center/bottom, `start_time`, `duration`, `animation` (none, fade, word_by_word, typewriter, ...) | video with text |
 | `add_karaoke_captions` | `video_path`, `segments` (from `transcribe_audio`), `highlight_color`, `max_words_per_line`=6 | video with highlighted captions |
 

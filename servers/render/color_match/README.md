@@ -1,12 +1,11 @@
 # Color Match
 
-Measure a clip's color profile and match one clip's brightness, contrast and tint to a reference clip.
+Match one clip's brightness, contrast and tint to a reference clip.
 
 ## Tools
 
 | Tool | Key inputs | Output |
 |---|---|---|
-| `get_color_profile` | `video_path`, `samples`=5 | per-channel mean/std |
 | `match_color` | `reference_path`, `target_path`, `strength`=1.0 | color-matched target |
 
 All tools return a dict (usually with `output_path`). Outputs default to `output/` at the repo root.

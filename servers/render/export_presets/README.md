@@ -6,7 +6,6 @@ Re-encode a video to a social platform's resolution, bitrate and frame rate, han
 
 | Tool | Key inputs | Output |
 |---|---|---|
-| `list_platform_presets` | - | youtube, youtube_shorts, tiktok, instagram_reels, instagram_post, instagram_story, twitter, facebook |
 | `export_for_platform` | `video_path`, `platform`, `fit_mode` crop/pad | exported video |
 
 All tools return a dict (usually with `output_path`). Outputs default to `output/` at the repo root.

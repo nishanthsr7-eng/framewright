@@ -28,10 +28,36 @@ Full server list with every tool: [docs/README.md](docs/README.md).
 ## Quick start
 
 1. Install `ffmpeg` and [`uv`](https://docs.astral.sh/uv/).
-2. Download models: `python scripts/fetch_models.py`
-3. Install a server: `uv sync --directory servers/<group>/<name>` (or all of them, see [docs/setup.md](docs/setup.md))
-4. Copy `.mcp.json.example` to `.mcp.json` and point your MCP client at it.
-5. Ask for an edit. The full flow is in [docs/workflow.md](docs/workflow.md).
+2. Run setup. It installs every server, downloads models, creates `.mcp.json` and runs a smoke test:
+   - Windows: `powershell -ExecutionPolicy Bypass -File scripts\setup.ps1`
+   - Linux/macOS: `bash scripts/setup.sh`
+3. Point your MCP client at `.mcp.json`.
+4. Ask for an edit. The full flow is in [docs/workflow.md](docs/workflow.md).
+
+---
+
+## Results
+
+Measured on synthetic, license-free fixtures with known ground truth (`evals/`). The numbers compare tools and track regressions; they are not claims about every kind of footage.
+
+| Eval | Metric | Result |
+|---|---|---|
+| Beat-synced cuts (90/120/140 BPM, 25 fps) | cuts > 1 frame off the beat | **0 / 114** (was 89 / 114); mean error ≈ 10 ms, worst 26 ms |
+| Beat detection | F-measure (mir_eval, ±70 ms) | 1.000 / 0.987 / 1.000 |
+| Scene cuts (5 hard cuts) | precision / recall | 1.000 / 1.000 |
+| Transcription (Whisper base, CPU) | word error rate | 0.026 |
+| Subject cut-out, anime set (20 frames) | mean IoU: anime model / general model | 0.604 / 0.528 |
+| Subject cut-out, live-action set (20 frames) | mean IoU: general model / anime model | 0.762 / 0.437 |
+
+How to reproduce (needs ffmpeg; each eval runs inside the server it tests):
+
+```bash
+python evals/make_fixtures.py
+uv run --directory servers/analysis/beat_sync python ../../../evals/eval_beat_sync.py
+uv run --directory servers/analysis/scene_detector python ../../../evals/eval_scenes.py
+uv run --directory servers/analysis/audio_analyzer --with mir_eval --with jiwer python ../../../evals/eval_audio.py
+uv run --directory servers/assets/subject_extractor python ../../../evals/eval_segmentation.py
+```
 
 ---
 

@@ -1,20 +1,17 @@
 # Frame Extractor
 
-General ffmpeg utilities: video info, trim, concat, picture-in-picture, scale, frame extraction, and Real-ESRGAN upscaling of frames.
+General ffmpeg utilities: video info, trim, concat, scale, frame extraction, and Real-ESRGAN upscaling of frames.
 
 ## Tools
 
 | Tool | Key inputs | Output |
 |---|---|---|
 | `get_video_info` | `video_path` | duration, fps, codec, size |
-| `find_video_path` | `root_path`, `video_name` | full path of a matching file |
 | `clip_video` | `video_path`, `start`, `end` or `duration` | trimmed clip |
-| `concat_videos` | `input_files`, `fast`=True | joined video |
-| `overlay_video` | `background_video`, `overlay_video`, `position` 1-9, `dx`, `dy` | picture-in-picture video |
+| `concat_videos` | `input_files`, `fast`=false | joined video |
 | `scale_video` | `video_path`, `width`, `height` (-2 keeps aspect) | resized video |
-| `extract_frames_from_video` | `video_path`, `fps` (0 = all), `format` 0 png/1 jpg/2 webp, `total_frames` | folder of frames |
-| `enhance_frames` | `input_folder`, `model`, `scale`=4, `in_place` | folder of upscaled frames |
-| `play_video` | `video_path`, `speed`, `loop` | opens ffplay (local preview) |
+| `extract_frames_from_video` | `video_path`, `every_seconds` (0 = all), `format` png/jpg/webp, `max_frames` | `output_folder`, `frame_count` |
+| `enhance_frames` | `input_folder`, `style`, `fast`, `scale`=4, `in_place` | folder of upscaled frames |
 
 All tools return a dict (usually with `output_path`). Outputs default to `output/` at the repo root.
 
@@ -31,15 +28,17 @@ All tools return a dict (usually with `output_path`). Outputs default to `output
   "tool": "extract_frames_from_video",
   "arguments": {
     "video_path": "input/clip.mp4",
-    "fps": 2,
-    "format": 0
+    "every_seconds": 2,
+    "format": "png"
   }
 }
 ```
 
+Picture-in-picture lives in compositor `compose_layers`.
+
 ## Anime vs general footage
 
-`enhance_frames`: use `model="realesrgan-x4plus-anime"` for anime and `realesrgan-x4plus` (default) for live action.
+`enhance_frames`: `style="anime"` uses `realesrgan-x4plus-anime` (or `realesr-animevideov3` with `fast=true`); `style="general"` (default) uses `realesrgan-x4plus`.
 
 ---
 

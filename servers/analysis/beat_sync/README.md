@@ -1,15 +1,19 @@
 # Beat Sync
 
-Detect a track's beats and auto-cut a list of clips to them (a beat-synced edit).
+Auto-cut a list of clips to a track's beats (a beat-synced edit). Beat times alone come from audio-analyzer `detect_beats`.
 
 ## Tools
 
 | Tool | Key inputs | Output |
 |---|---|---|
-| `detect_beats` | `music_path` | BPM + beat times |
 | `generate_beat_synced_video` | `clip_paths`, `music_path`, `beats_per_cut`=1, `max_duration` | `output_path` of the cut video with the music |
+| `build_edit_plan` | `clip_paths`, `music_path`, `beats_per_cut`=2, `max_duration`, `project_name` | `output_path` of an edit plan JSON ([docs/edit-plan.md](../../../docs/edit-plan.md)) with cuts on the beat |
+| `validate_plan` | `plan_path`, `base_dir`, `beat_tolerance_frames`=1, `require_beats`=true | `valid`, `errors`, `warnings`, `timeline_duration` |
+| `auto_amv_plan` | `clip_paths`, `music_path`, `end_time`, `style`=anime\|general, `pace`=hype\|steady\|chill, `fps`=24, `title` | `output_path`, `clip_count`, `flashes`, `sections`, `validation` |
 
 All tools return a dict (usually with `output_path`). Outputs default to `output/` at the repo root.
+
+`auto_amv_plan` does the whole AMV draft in one call: beats, downbeats and energy sections (librosa), shot cuts (ffmpeg `scene` filter) and per-shot motion. High-motion shots go to drop/chorus, calm ones to intro/outro. Pace `hype` cuts every 2 beats in verses and every beat in drop/chorus. Clips starting on a drop/chorus downbeat get `transition_in: Flash White` + `effects: ["Screen Shake"]`. The plan is validated before returning; render it with timeline-project `render_plan` or build it in Resolve.
 
 ## Requirements
 

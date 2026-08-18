@@ -2,7 +2,10 @@
 
 The edit plan is the hand-off between the analysis tools and the LLM that writes the Resolve script. It is plain JSON: the LLM only translates it into Resolve API calls, it does not have to guess timings.
 
-Status: **draft v0.1**. A `validate_plan` tool that checks it before Resolve runs is planned.
+Status: **draft v0.1**.
+
+- `build_edit_plan` (beat-sync server) drafts a plan from a song and clips, with cuts on the beat.
+- `validate_plan` checks a plan before Resolve runs it: files exist, `in`/`out` fit inside each clip, no overlaps on a track, and clips start on a beat (within `beat_tolerance_frames`). Errors mean Resolve would fail or build the wrong edit. Warnings flag gaps and off-beat cuts.
 
 ## Shape
 
@@ -50,6 +53,7 @@ Status: **draft v0.1**. A `validate_plan` tool that checks it before Resolve run
 | `clips[].speed` | 1.0 = normal; 0.5 = half speed |
 | `clips[].transition_in` | Transition into this clip: a Resolve transition or one of the bundled Fusion transitions |
 | `clips[].effects` | Fusion effect template names to apply |
+| `clips[].section` | Optional: the music section label the clip sits in (written by `auto_amv_plan`) |
 | `titles[]` | Text, timing, track and title template |
 | `markers[]` | Timeline markers (Resolve colors: Blue, Red, Green, Yellow, ...) |
 
@@ -60,3 +64,10 @@ Status: **draft v0.1**. A `validate_plan` tool that checks it before Resolve run
 - Clips on the same track must not overlap.
 - Paths are relative to the repo root, or absolute.
 - Unknown fields are ignored, so you can add notes for the LLM.
+
+## Tools that read or write plans
+
+- `build_edit_plan` (beat_sync): simple draft, clips in order on the beat.
+- `auto_amv_plan` (beat_sync): full AMV draft with sections, motion-picked shots, and `Flash White` + `Screen Shake` on drop/chorus downbeats.
+- `validate_plan` (beat_sync): check before rendering or running Resolve.
+- `render_plan` (timeline_project): render to MP4 without Resolve. Uses track 1, `speed`, `music`, flash/shake markers and `titles`; `platform="tiktok"` makes a 9:16 version.

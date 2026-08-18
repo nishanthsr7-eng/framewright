@@ -1,6 +1,6 @@
 # Overlay FX
 
-Add film-look overlays: grain, vignette, chromatic aberration and moving light leaks.
+Add film-look overlays: grain, vignette and moving light leaks. For an RGB split, use effects `apply_effect` with `rgb_split`.
 
 ## Tools
 
@@ -8,7 +8,6 @@ Add film-look overlays: grain, vignette, chromatic aberration and moving light l
 |---|---|---|
 | `add_film_grain` | `input_path`, `intensity`=20 | video with grain |
 | `add_vignette` | `input_path`, `intensity`=0.5 | video with vignette |
-| `add_chromatic_aberration` | `input_path`, `shift`=3 px | video with RGB fringe |
 | `add_light_leak` | `input_path`, `style` warm/golden/cool/white, `intensity`=0.5, `pan` left_to_right/right_to_left/static | video with light leak |
 
 All tools return a dict (usually with `output_path`). Outputs default to `output/` at the repo root.

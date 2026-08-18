@@ -29,7 +29,7 @@ Put clips and music in `input/`. Check what you have:
 
 ## 4. Plan and script
 
-1. Collect the results into an edit plan JSON: [edit-plan.md](edit-plan.md). An example lives in `examples/`.
+1. Collect the results into an edit plan JSON: [edit-plan.md](edit-plan.md). An example lives in `examples/`. `build_edit_plan` drafts one with cuts on the beat; run `validate_plan` on it (and again after any LLM or hand edits).
 2. Give the plan and `prompts/resolve-script.md` to any LLM (ChatGPT, Claude, Gemini, local models).
 3. It returns a Python script that uses `resolve/bridge` helpers.
 

@@ -11,6 +11,17 @@
 Check: `ffmpeg -version` and `ffprobe -version`.
 Stabilization needs an ffmpeg build with `libvidstab`; alpha `.webm` output needs `libvpx`. Full builds (e.g. Gyan's on Windows) include both.
 
+## One-command setup
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1   # Windows
+bash scripts/setup.sh                                        # Linux/macOS
+```
+
+Installs every server, downloads models, copies `.mcp.json.example` to `.mcp.json`, then runs `scripts/smoke_test.py`, which starts each server and lists its tools. Flags: `-SkipModels`/`--skip-models`, `-SkipSmoke`/`--skip-smoke`. The steps below do the same by hand.
+
+Smoke-test some servers only: `python scripts/smoke_test.py effects chroma_key`.
+
 ## 2. Models
 
 ```bash
@@ -29,23 +40,21 @@ Downloads are checked against pinned SHA256 hashes where available.
 
 ## 3. Install servers
 
-One server:
+The repo is one uv workspace (root `pyproject.toml`, one `uv.lock`, one `.venv`). All servers share the `servers/core` helper package.
+
+All servers:
 
 ```bash
-uv sync --directory servers/render/effects
+uv sync --all-packages
 ```
 
-All servers (bash):
+One server only:
 
 ```bash
-for d in servers/*/*/; do uv sync --directory "$d"; done
+uv sync --package effects-mcp
 ```
 
-All servers (PowerShell):
-
-```powershell
-Get-ChildItem servers\*\* -Directory | ForEach-Object { uv sync --directory $_.FullName }
-```
+`uv run --directory servers/<group>/<name> <script>` still works and uses the shared `.venv`.
 
 ## 4. Connect an MCP client
 

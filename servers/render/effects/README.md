@@ -1,14 +1,12 @@
 # Effects
 
-Apply editing-style effects (zoom punch, shake, RGB split, flash, glow, grades) and xfade transitions between two clips.
+Apply editing-style effects (zoom punch, shake, RGB split, flash, glow) and xfade transitions between two clips.
 
 ## Tools
 
 | Tool | Key inputs | Output |
 |---|---|---|
-| `list_effects` | - | effect names + descriptions |
 | `apply_effect` | `video_path`, `effect`, `intensity`=1.0, `start_time`, `duration` | processed video |
-| `list_transitions` | - | xfade transition names |
 | `apply_transition` | `video_a`, `video_b`, `transition`=fade, `duration`=0.5 | A, transition, then B |
 
 All tools return a dict (usually with `output_path`). Outputs default to `output/` at the repo root.
