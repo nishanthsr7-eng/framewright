@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.11"
+
+      - name: Install ffmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+
+      - name: ffmpeg version
+        run: ffmpeg -version
+
+      # Only the dev tools; server deps (torch, onnx, whisper) are too heavy for CI.
+      - name: Lint
+        run: uv run --only-group dev ruff check .
+
+      - name: Unit tests
+        run: uv run --only-group dev pytest
