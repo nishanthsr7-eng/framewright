@@ -13,9 +13,19 @@ members = ["servers/core", "servers/analysis/*", "servers/assets/*", "servers/re
 
 [tool.uv.sources]
 framewright-core = { workspace = true }
+beat-sync-mcp = { workspace = true }
+effects-mcp = { workspace = true }
+timeline-project-mcp = { workspace = true }
+scene-detector-mcp = { workspace = true }
 
 [dependency-groups]
 dev = ["ruff>=0.6", "pyright>=1.1.380", "pytest>=8", "pre-commit>=3.8"]
+# What tests/ imports: core plus the light servers (no torch/onnx/whisper).
+test = ["pytest>=8", "framewright-core", "beat-sync-mcp", "effects-mcp", "timeline-project-mcp"]
+# What the CI eval job runs (evals/eval_beat_sync.py, evals/eval_scenes.py).
+eval = ["beat-sync-mcp", "scene-detector-mcp"]
+# evals/eval_agent.py (needs LLM endpoints, not run in CI).
+agent = ["beat-sync-mcp", "luaparser>=3.2"]
 
 [tool.ruff]
 line-length = 120
@@ -37,3 +47,4 @@ reportMissingModuleSource = "none"
 [tool.pytest.ini_options]
 testpaths = ["resolve/bridge", "servers", "tests"]
 addopts = "-q"
+markers = ["ffmpeg: needs ffmpeg/ffprobe on PATH (tiny lavfi inputs)"]

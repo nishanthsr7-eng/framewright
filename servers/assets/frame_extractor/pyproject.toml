@@ -9,12 +9,12 @@ dependencies = ["framewright-core", "mcp[cli]>=1.6.0"]
 [project.scripts]
 frame-extractor-mcp = "ffmpeg_mcp.server:main"
 
-[tool.poetry]
-packages = [{include = "ffmpeg_mcp", from = "src"}]
-
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ffmpeg_mcp"]
 
 [tool.uv.sources]
 framewright-core = { workspace = true }

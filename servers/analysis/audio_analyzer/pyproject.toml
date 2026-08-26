@@ -8,22 +8,21 @@ dependencies = ["framewright-core",
     "mcp[cli]>=1.6.0",
     "librosa>=0.10.1,<0.11",
     "faster-whisper>=1.0.0,<2.0",
+    "av>=11,<18",  # PyAV 18+ dropped open(metadata_errors=...), which faster-whisper passes
     "numpy>=1.23,<2.0",
     "soundfile>=0.12.1",
     "onnxruntime>=1.17.0,<1.20"
-]
-
-[tool.poetry]
-packages = [
-    {include = "audio_analyzer_mcp", from = "src"},
 ]
 
 [project.scripts]
 audio-analyzer-mcp = "audio_analyzer_mcp.server:main"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/audio_analyzer_mcp"]
 
 [tool.uv.sources]
 framewright-core = { workspace = true }

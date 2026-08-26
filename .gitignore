@@ -1,7 +1,18 @@
 # Media and generated files
 input/
-output/
+/output/
 models/
+
+# demos: keep scripts, plans and READMEs; never footage, renders, frames or fonts
+demos/*/output/**
+!demos/*/output/**/
+!demos/*/output/**/*.py
+!demos/*/output/**/*.json
+!demos/*/output/**/README.md
+
+# tool caches
+.pytest_cache/
+.ruff_cache/
 
 # Python
 .venv/

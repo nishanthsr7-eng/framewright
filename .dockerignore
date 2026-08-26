@@ -1,0 +1,15 @@
+.git
+.venv
+**/.venv
+**/__pycache__
+.pytest_cache
+.ruff_cache
+models
+input
+output
+samples
+evals/fixtures
+.mcp.json
+.claude
+CLAUDE.md
+*.local.md

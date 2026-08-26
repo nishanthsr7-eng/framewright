@@ -9,17 +9,15 @@ dependencies = ["framewright-core",
     "pillow>=10.0.0"
 ]
 
-[tool.poetry]
-packages = [
-    {include = "text_overlay_mcp", from = "src"},
-]
-
 [project.scripts]
 text-overlay-mcp = "text_overlay_mcp.server:main"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/text_overlay_mcp"]
 
 [tool.uv.sources]
 framewright-core = { workspace = true }

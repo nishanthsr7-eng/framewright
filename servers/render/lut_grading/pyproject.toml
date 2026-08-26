@@ -6,16 +6,17 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = ["framewright-core", "mcp[cli]>=1.6.0"]
 
-[tool.poetry]
-packages = [{include = "lut_grading_mcp", from = "src"}]
 include = ["src/lut_grading_mcp/luts/*.cube"]
 
 [project.scripts]
 lut-grading-mcp = "lut_grading_mcp.server:main"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lut_grading_mcp"]
 
 [tool.uv.sources]
 framewright-core = { workspace = true }
