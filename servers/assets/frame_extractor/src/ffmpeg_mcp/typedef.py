@@ -23,10 +23,12 @@ class StreamDisposition:
         self.still_image = disposition.get("still_image", 0)
         self.multilayer = disposition.get("multilayer", 0)
 
+
 class StreamTags:
     def __init__(self, tags):
         self.handler_name = tags.get("handler_name", "")
         self.vendor_id = tags.get("vendor_id", "")
+
 
 class VideoStream:
     def __init__(self, stream):
@@ -69,6 +71,7 @@ class VideoStream:
         self.disposition = StreamDisposition(stream.get("disposition", {}))
         self.tags = StreamTags(stream.get("tags", {}))
 
+
 class AudioStream:
     def __init__(self, stream):
         self.index = stream.get("index")
@@ -97,6 +100,7 @@ class AudioStream:
         self.extradata_size = stream.get("extradata_size")
         self.disposition = StreamDisposition(stream.get("disposition", {}))
         self.tags = StreamTags(stream.get("tags", {}))
+
 
 class FormatContext:
     def __init__(self, json_data):

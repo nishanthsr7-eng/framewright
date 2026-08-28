@@ -13,7 +13,7 @@ def _find_scenes(video_path, threshold=27.0, min_scene_len=15):
     return video, scene_manager.get_scene_list()
 
 
-def detect_scenes(video_path, threshold=27.0, min_scene_len=15):
+def detect_scenes(video_path: str, threshold: float = 27.0, min_scene_len: int = 15) -> dict:
     """
     检测视频中的镜头/场景切换点(基于画面内容变化)。
 
@@ -27,17 +27,24 @@ def detect_scenes(video_path, threshold=27.0, min_scene_len=15):
 
     scenes = []
     for i, (start, end) in enumerate(scene_list):
-        scenes.append({
-            "index": i + 1,
-            "start": round(start.get_seconds(), 3),
-            "end": round(end.get_seconds(), 3),
-            "duration": round(end.get_seconds() - start.get_seconds(), 3),
-        })
+        scenes.append(
+            {
+                "index": i + 1,
+                "start": round(start.get_seconds(), 3),
+                "end": round(end.get_seconds(), 3),
+                "duration": round(end.get_seconds() - start.get_seconds(), 3),
+            }
+        )
 
     return {"scene_count": len(scenes), "scenes": scenes}
 
 
-def split_scenes(video_path, output_folder=None, threshold=27.0, min_scene_len=15):
+def split_scenes(
+    video_path: str,
+    output_folder: str | None = None,
+    threshold: float = 27.0,
+    min_scene_len: int = 15,
+) -> dict:
     """
     检测视频镜头切换点，并将视频按镜头拆分为多个独立的视频文件(基于 ffmpeg)。
     """
@@ -56,16 +63,20 @@ def split_scenes(video_path, output_folder=None, threshold=27.0, min_scene_len=1
 
     video_name = os.path.splitext(os.path.basename(video_path))[0]
     file_template = f"{video_name}-Scene-$SCENE_NUMBER.mp4"
-    split_video_ffmpeg(video_path, scene_list, output_dir=output_folder, output_file_template=file_template, show_progress=False)
+    split_video_ffmpeg(
+        video_path, scene_list, output_dir=output_folder, output_file_template=file_template, show_progress=False
+    )
 
     scenes = []
     for i, (start, end) in enumerate(scene_list):
-        scenes.append({
-            "index": i + 1,
-            "start": round(start.get_seconds(), 3),
-            "end": round(end.get_seconds(), 3),
-            "duration": round(end.get_seconds() - start.get_seconds(), 3),
-            "file": os.path.join(output_folder, file_template.replace("$SCENE_NUMBER", f"{i + 1:03d}")),
-        })
+        scenes.append(
+            {
+                "index": i + 1,
+                "start": round(start.get_seconds(), 3),
+                "end": round(end.get_seconds(), 3),
+                "duration": round(end.get_seconds() - start.get_seconds(), 3),
+                "file": os.path.join(output_folder, file_template.replace("$SCENE_NUMBER", f"{i + 1:03d}")),
+            }
+        )
 
     return {"scene_count": len(scenes), "scenes": scenes, "output_folder": output_folder}

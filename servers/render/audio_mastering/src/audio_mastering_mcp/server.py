@@ -1,4 +1,3 @@
-import os
 import sys
 from typing import Annotated
 
@@ -7,7 +6,6 @@ from pydantic import Field
 if sys.platform == "win32":
     sys.stderr.reconfigure(encoding="utf-8")
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from framewright_core import run_tool as _run
 from framewright_core import setup_logging
@@ -24,7 +22,9 @@ InputPath = Annotated[str, Field(description="Audio or video file")]
 @mcp.tool()
 def normalize_loudness(
     input_path: InputPath,
-    target_lufs: Annotated[float, Field(ge=-40, le=-5, description="-14 streaming/YouTube, -16 podcasts, -23 broadcast")] = -14.0,
+    target_lufs: Annotated[
+        float, Field(ge=-40, le=-5, description="-14 streaming/YouTube, -16 podcasts, -23 broadcast")
+    ] = -14.0,
     output_path: Annotated[str | None, Field(description="Default: output/<file>/<file>_normalized.<ext>")] = None,
 ) -> dict:
     """Normalise loudness to a target LUFS (EBU R128)."""
@@ -53,9 +53,17 @@ def add_background_music(
     output_path: Annotated[str | None, Field(description="Default: output/<video>/<video>_with_music.<ext>")] = None,
 ) -> dict:
     """Mix background music under a video's audio, with optional ducking under speech."""
-    return _run(mastering.add_background_music, video_path=video_path, music_path=music_path,
-                music_volume_db=music_volume_db, duck=duck, duck_threshold_db=duck_threshold_db,
-                duck_ratio=duck_ratio, loop=loop, output_path=output_path)
+    return _run(
+        mastering.add_background_music,
+        video_path=video_path,
+        music_path=music_path,
+        music_volume_db=music_volume_db,
+        duck=duck,
+        duck_threshold_db=duck_threshold_db,
+        duck_ratio=duck_ratio,
+        loop=loop,
+        output_path=output_path,
+    )
 
 
 def main():

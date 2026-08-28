@@ -1,4 +1,3 @@
-import os
 import sys
 from typing import Annotated
 
@@ -7,7 +6,6 @@ from pydantic import Field
 if sys.platform == "win32":
     sys.stderr.reconfigure(encoding="utf-8")
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from framewright_core import run_tool as _run
 from framewright_core import setup_logging
@@ -37,7 +35,9 @@ def split_scenes(
     min_scene_len: MinLen = 15,
 ) -> dict:
     """Detect shot changes and write each scene to its own video file."""
-    return _run(detector.split_scenes, video_path, output_folder=output_folder, threshold=threshold, min_scene_len=min_scene_len)
+    return _run(
+        detector.split_scenes, video_path, output_folder=output_folder, threshold=threshold, min_scene_len=min_scene_len
+    )
 
 
 def main():

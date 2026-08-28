@@ -1,6 +1,6 @@
 # Audio Analyzer
 
-Analyze a soundtrack or a video's audio: beats, downbeats, song sections, impacts, energy over time, and local speech-to-text with word timestamps. The output gives the LLM timing anchors for cuts.
+Analyze a soundtrack or a video's audio: beats, downbeats, song sections, impacts, energy over time and local speech-to-text with word timestamps. The output gives the LLM timing anchors for cuts.
 
 ## Tools
 

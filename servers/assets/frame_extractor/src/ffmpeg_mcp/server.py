@@ -8,7 +8,6 @@ from pydantic import Field
 if sys.platform == "win32":
     sys.stderr.reconfigure(encoding="utf-8")
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from framewright_core import setup_logging
 from mcp.server.fastmcp import FastMCP
@@ -50,10 +49,11 @@ def clip_video(
     if end is None and duration is not None and start is None:
         start = 0
     try:
-        result = cut_video.clip_video_ffmpeg(video_path, start=start, end=end, duration=duration,
-                                             output_path=output_path, time_out=600)
+        result = cut_video.clip_video_ffmpeg(
+            video_path, start=start, end=end, duration=duration, output_path=output_path, time_out=600
+        )
     except ValueError as e:
-        raise ToolError(f"Bad time value: {e}. Use seconds or 'MM:SS' / 'HH:MM:SS'.")
+        raise ToolError(f"Bad time value: {e}. Use seconds or 'MM:SS' / 'HH:MM:SS'.") from e
     return _check(result, "Clip")
 
 
@@ -61,7 +61,9 @@ def clip_video(
 def concat_videos(
     input_files: Annotated[list[str], Field(min_length=2, description="Videos to join, in order")],
     output_path: Annotated[str | None, Field(description="Output file; its extension sets the container")] = None,
-    fast: Annotated[bool, Field(description="Stream copy; only when all inputs share codec, size and frame rate")] = False,
+    fast: Annotated[
+        bool, Field(description="Stream copy; only when all inputs share codec, size and frame rate")
+    ] = False,
 ) -> dict:
     """Join videos end to end."""
     for f in input_files:
@@ -83,10 +85,21 @@ def get_video_info(video_path: VideoPath) -> dict:
         raise ToolError(f"ffprobe failed: {log[-600:]}")
     try:
         streams = json.loads(log).get("streams", [])
-    except json.JSONDecodeError:
-        raise ToolError("ffprobe returned unreadable output")
-    keep = ("index", "codec_type", "codec_name", "width", "height", "r_frame_rate", "duration",
-            "sample_rate", "channels", "pix_fmt", "bit_rate")
+    except json.JSONDecodeError as e:
+        raise ToolError("ffprobe returned unreadable output") from e
+    keep = (
+        "index",
+        "codec_type",
+        "codec_name",
+        "width",
+        "height",
+        "r_frame_rate",
+        "duration",
+        "sample_rate",
+        "channels",
+        "pix_fmt",
+        "bit_rate",
+    )
     return {"video_path": video_path, "streams": [{k: s[k] for k in keep if k in s} for s in streams]}
 
 
@@ -114,8 +127,10 @@ def extract_frames_from_video(
 ) -> dict:
     """Save video frames as numbered images (frame_0001.png, ...)."""
     _need_file(video_path)
-    result = _check(cut_video.extract_frames_from_video(video_path, every_seconds, output_folder,
-                                                         IMG_FORMATS[format], max_frames), "Frame extraction")
+    result = _check(
+        cut_video.extract_frames_from_video(video_path, every_seconds, output_folder, IMG_FORMATS[format], max_frames),
+        "Frame extraction",
+    )
     folder = os.path.dirname(result["output_path"])
     return {"output_folder": folder, "frame_count": len(os.listdir(folder))}
 
@@ -123,7 +138,9 @@ def extract_frames_from_video(
 @mcp.tool()
 def enhance_frames(
     input_folder: Annotated[str, Field(description="Folder of frames, e.g. from extract_frames_from_video")],
-    style: Annotated[Literal["anime", "general"], Field(description="'anime' for animation, 'general' for live-action")] = "general",
+    style: Annotated[
+        Literal["anime", "general"], Field(description="'anime' for animation, 'general' for live-action")
+    ] = "general",
     fast: Annotated[bool, Field(description="Anime only: use the faster anime-video model")] = False,
     scale: Annotated[Literal[2, 3, 4], Field(description="Upscale factor")] = 4,
     output_folder: Annotated[str | None, Field(description="Default: '<input_folder>_enhanced'")] = None,

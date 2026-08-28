@@ -1,4 +1,3 @@
-import os
 import sys
 from typing import Annotated
 
@@ -7,7 +6,6 @@ from pydantic import Field
 if sys.platform == "win32":
     sys.stderr.reconfigure(encoding="utf-8")
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from framewright_core import run_tool as _run
 from framewright_core import setup_logging
@@ -28,8 +26,14 @@ def generate_highlights(
     output_path: Annotated[str | None, Field(description="Default: output/<video>/<video>_highlights.<ext>")] = None,
 ) -> dict:
     """Pick the loudest, most energetic moments by audio and join them in time order into a highlight reel."""
-    return _run(highlights.generate_highlights, video_path, target_duration=target_duration,
-                clip_duration=clip_duration, min_gap=min_gap, output_path=output_path)
+    return _run(
+        highlights.generate_highlights,
+        video_path,
+        target_duration=target_duration,
+        clip_duration=clip_duration,
+        min_gap=min_gap,
+        output_path=output_path,
+    )
 
 
 def main():

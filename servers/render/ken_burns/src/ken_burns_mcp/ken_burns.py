@@ -1,22 +1,29 @@
 import os
 
-from framewright_core import output_root as _get_output_root
+from framewright_core import default_output_path, video_codec_args
 from framewright_core import run_ffmpeg as _run_ffmpeg
 
 PAN_DIRECTIONS = {
-    "center", "left_to_right", "right_to_left", "top_to_bottom", "bottom_to_top",
+    "center",
+    "left_to_right",
+    "right_to_left",
+    "top_to_bottom",
+    "bottom_to_top",
 }
 
 
-def _default_output_path(input_path, suffix="ken_burns"):
-    base = os.path.splitext(os.path.basename(input_path))[0]
-    out_dir = os.path.join(_get_output_root(), base)
-    os.makedirs(out_dir, exist_ok=True)
-    return os.path.join(out_dir, f"{base}_{suffix}.mp4")
-
-
-def create_ken_burns(image_path, duration=5.0, zoom_start=1.0, zoom_end=1.3, pan="center",
-                      width=1920, height=1080, fps=30, output_path=None):
+def create_ken_burns(
+    image_path: str,
+    duration: float = 5.0,
+    zoom_start: float = 1.0,
+    zoom_end: float = 1.3,
+    pan: str = "center",
+    width: int = 1920,
+    height: int = 1080,
+    fps: int = 30,
+    output_path: str | None = None,
+    lossless: bool = False,
+) -> dict:
     if not os.path.exists(image_path):
         raise FileNotFoundError(f"Image not found: {image_path}")
     if pan not in PAN_DIRECTIONS:
@@ -49,13 +56,31 @@ def create_ken_burns(image_path, duration=5.0, zoom_start=1.0, zoom_end=1.3, pan
     )
 
     if output_path is None:
-        output_path = _default_output_path(image_path)
+        output_path = default_output_path(image_path, "ken_burns", ext=".mp4")
     else:
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
-    args = ["-loop", "1", "-i", image_path, "-vf", vf, "-t", f"{duration}",
-            "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
+    args = [
+        "-loop",
+        "1",
+        "-i",
+        image_path,
+        "-vf",
+        vf,
+        "-t",
+        f"{duration}",
+        *video_codec_args(lossless),
+        output_path,
+    ]
     _run_ffmpeg(args)
 
-    return {"output_path": output_path, "duration": duration, "zoom_start": zoom_start,
-            "zoom_end": zoom_end, "pan": pan, "width": width, "height": height, "fps": fps}
+    return {
+        "output_path": output_path,
+        "duration": duration,
+        "zoom_start": zoom_start,
+        "zoom_end": zoom_end,
+        "pan": pan,
+        "width": width,
+        "height": height,
+        "fps": fps,
+    }

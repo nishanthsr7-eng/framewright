@@ -1,4 +1,3 @@
-import json
 import os
 import shlex
 import shutil
@@ -6,6 +5,7 @@ import subprocess
 import tempfile
 
 from framewright_core import output_root as _get_output_root
+from framewright_core import probe_video, video_codec_args
 
 from text_overlay_mcp import renderer
 
@@ -13,6 +13,7 @@ from text_overlay_mcp import renderer
 def _run(cmd, timeout=600):
     proc = subprocess.run(
         shlex.split(cmd, posix=True),
+        stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -22,66 +23,32 @@ def _run(cmd, timeout=600):
     return proc.returncode, proc.stdout + "\n" + proc.stderr
 
 
-def _probe_video(video_path):
-    cmd = (
-        f"ffprobe -v error -print_format json -show_format -show_streams "
-        f"{shlex.quote(video_path)}"
-    )
-    proc = subprocess.run(
-        shlex.split(cmd, posix=True),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=60,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(f"ffprobe failed: {proc.stderr}")
-    data = json.loads(proc.stdout)
-    v_stream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
-    a_stream = next((s for s in data["streams"] if s["codec_type"] == "audio"), None)
-    if v_stream is None:
-        raise RuntimeError("No video stream found")
-
-    width = int(v_stream["width"])
-    height = int(v_stream["height"])
-
-    fps_str = v_stream.get("r_frame_rate", "30/1")
-    num, den = fps_str.split("/")
-    fps = float(num) / float(den) if float(den) != 0 else 30.0
-
-    duration = float(data["format"].get("duration", v_stream.get("duration", 0)))
-
-    return {
-        "width": width,
-        "height": height,
-        "fps": fps,
-        "duration": duration,
-        "has_audio": a_stream is not None,
-    }
+def _burn_codec(lossless: bool) -> str:
+    return " ".join(video_codec_args(True)) if lossless else "-c:v libx264 -crf 18 -pix_fmt yuv420p"
 
 
 def create_text_overlay(
-    video_path,
-    text,
-    output_folder=None,
-    font="anton",
-    font_size=None,
-    color="#FFFFFF",
-    outline_color="#000000",
-    outline_width=0,
-    shadow=False,
-    position="center",
-    start_time=0.0,
-    duration=None,
-    animation="word_by_word",
-    fps=None,
-):
+    video_path: str,
+    text: str,
+    output_folder: str | None = None,
+    font: str = "anton",
+    font_size: int | None = None,
+    color: str = "#FFFFFF",
+    outline_color: str = "#000000",
+    outline_width: int = 0,
+    shadow: bool = False,
+    position: str = "center",
+    start_time: float = 0.0,
+    duration: float | None = None,
+    animation: str = "word_by_word",
+    fps: float | None = None,
+    lossless: bool = False,
+) -> tuple[int, str, str]:
     if not os.path.isfile(video_path):
         return -1, f"Input video not found: {video_path}", ""
 
-    info = _probe_video(video_path)
-    width, height, src_fps, src_duration = info["width"], info["height"], info["fps"], info["duration"]
+    info = probe_video(video_path)
+    width, height, src_fps, src_duration = info.width, info.height, info.fps, info.duration
 
     if fps is None:
         fps = min(src_fps, 30.0)
@@ -105,10 +72,16 @@ def create_text_overlay(
         for i in range(frame_count):
             progress = i / max(frame_count - 1, 1)
             frame = renderer.render_frame(
-                (width, height), text,
-                font_name=font, font_size=font_size, color=color,
-                outline_color=outline_color, outline_width=outline_width,
-                shadow=shadow, position=position, progress=progress,
+                (width, height),
+                text,
+                font_name=font,
+                font_size=font_size,
+                color=color,
+                outline_color=outline_color,
+                outline_width=outline_width,
+                shadow=shadow,
+                position=position,
+                progress=progress,
                 animation=animation,
             )
             frame.save(os.path.join(tmp_dir, f"overlay_{i + 1:04d}.png"))
@@ -124,13 +97,13 @@ def create_text_overlay(
 
         ext = os.path.splitext(video_path)[1] or ".mp4"
         burned_path = os.path.join(output_folder, f"output_burned{ext}")
-        audio_map = "-map 0:a?" if info["has_audio"] else ""
+        audio_map = "-map 0:a?" if info.has_audio else ""
         cmd = (
             f"ffmpeg -y -i {shlex.quote(video_path)} "
             f"-framerate {fps} -i {shlex.quote(os.path.join(tmp_dir, 'overlay_%04d.png'))} "
-            f"-filter_complex \"[1:v]format=rgba,setpts=PTS+{start_time}/TB[ov];"
+            f'-filter_complex "[1:v]format=rgba,setpts=PTS+{start_time}/TB[ov];'
             f"[0:v][ov]overlay=0:0:enable='between(t,{start_time},{end_time})'[v]\" "
-            f"-map \"[v]\" {audio_map} -c:v libx264 -crf 18 -pix_fmt yuv420p -c:a copy "
+            f'-map "[v]" {audio_map} {_burn_codec(lossless)} -c:a copy '
             f"{shlex.quote(burned_path)}"
         )
         code, log = _run(cmd, timeout=1200)
@@ -156,35 +129,38 @@ def _group_lines(segments, max_words_per_line):
         if not words:
             continue
         for i in range(0, len(words), max_words_per_line):
-            chunk = words[i:i + max_words_per_line]
-            lines.append({
-                "start": chunk[0]["start"],
-                "end": chunk[-1]["end"],
-                "words": chunk,
-            })
+            chunk = words[i : i + max_words_per_line]
+            lines.append(
+                {
+                    "start": chunk[0]["start"],
+                    "end": chunk[-1]["end"],
+                    "words": chunk,
+                }
+            )
     return lines
 
 
 def create_karaoke_captions(
-    video_path,
-    segments,
-    output_folder=None,
-    font="anton",
-    font_size=None,
-    color="#FFFFFF",
-    highlight_color="#FFD700",
-    outline_color="#000000",
-    outline_width=6,
-    shadow=True,
-    position="bottom",
-    max_words_per_line=6,
-    fps=None,
-):
+    video_path: str,
+    segments: list[dict],
+    output_folder: str | None = None,
+    font: str = "anton",
+    font_size: int | None = None,
+    color: str = "#FFFFFF",
+    highlight_color: str = "#FFD700",
+    outline_color: str = "#000000",
+    outline_width: int = 6,
+    shadow: bool = True,
+    position: str = "bottom",
+    max_words_per_line: int = 6,
+    fps: float | None = None,
+    lossless: bool = False,
+) -> tuple[int, str, str]:
     if not os.path.isfile(video_path):
         return -1, f"Input video not found: {video_path}", ""
 
-    info = _probe_video(video_path)
-    width, height, src_fps, src_duration = info["width"], info["height"], info["fps"], info["duration"]
+    info = probe_video(video_path)
+    width, height, src_fps, src_duration = info.width, info.height, info.fps, info.duration
 
     if fps is None:
         fps = min(src_fps, 30.0)
@@ -214,10 +190,17 @@ def create_karaoke_captions(
             line = lines[line_idx]
             if line["start"] - 0.1 <= t <= line["end"] + 0.15:
                 frame = renderer.render_karaoke_frame(
-                    (width, height), line["words"], t,
-                    font_name=font, font_size=font_size, color=color,
-                    highlight_color=highlight_color, outline_color=outline_color,
-                    outline_width=outline_width, shadow=shadow, position=position,
+                    (width, height),
+                    line["words"],
+                    t,
+                    font_name=font,
+                    font_size=font_size,
+                    color=color,
+                    highlight_color=highlight_color,
+                    outline_color=outline_color,
+                    outline_width=outline_width,
+                    shadow=shadow,
+                    position=position,
                 )
             else:
                 frame = renderer.render_karaoke_frame((width, height), [], t)
@@ -234,13 +217,13 @@ def create_karaoke_captions(
 
         ext = os.path.splitext(video_path)[1] or ".mp4"
         burned_path = os.path.join(output_folder, f"output_burned{ext}")
-        audio_map = "-map 0:a?" if info["has_audio"] else ""
+        audio_map = "-map 0:a?" if info.has_audio else ""
         cmd = (
             f"ffmpeg -y -i {shlex.quote(video_path)} "
             f"-framerate {fps} -i {shlex.quote(os.path.join(tmp_dir, 'karaoke_%04d.png'))} "
-            f"-filter_complex \"[1:v]format=rgba,setpts=PTS+0/TB[ov];"
+            f'-filter_complex "[1:v]format=rgba,setpts=PTS+0/TB[ov];'
             f"[0:v][ov]overlay=0:0:enable='between(t,0,{duration})'[v]\" "
-            f"-map \"[v]\" {audio_map} -c:v libx264 -crf 18 -pix_fmt yuv420p -c:a copy "
+            f'-map "[v]" {audio_map} {_burn_codec(lossless)} -c:a copy '
             f"{shlex.quote(burned_path)}"
         )
         code, log = _run(cmd, timeout=1200)

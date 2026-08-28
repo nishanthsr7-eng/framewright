@@ -1,45 +1,17 @@
-import json
 import os
-import subprocess
 import tempfile
 from functools import partial
 
 import numpy as np
-from framewright_core import output_root as _get_output_root
-from framewright_core import run_ffmpeg
+from framewright_core import default_output_path, probe_video, run_ffmpeg, video_codec_args
 from PIL import Image
-
-
-def _probe(path):
-    cmd = [
-        "ffprobe", "-v", "error", "-print_format", "json",
-        "-show_format", "-show_streams", path,
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
-    data = json.loads(result.stdout)
-    vstream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
-    if vstream is None:
-        raise RuntimeError(f"No video stream in: {path}")
-    has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
-    duration = float(data["format"].get("duration") or vstream.get("duration") or 0.0)
-    return {"duration": duration, "has_audio": has_audio}
-
 
 _run_ffmpeg = partial(run_ffmpeg, timeout=900)
 
 
-def _default_output_path(video_path, suffix):
-    base, ext = os.path.splitext(os.path.basename(video_path))
-    out_dir = os.path.join(_get_output_root(), base)
-    os.makedirs(out_dir, exist_ok=True)
-    return os.path.join(out_dir, f"{base}_{suffix}{ext if ext else '.mp4'}")
-
-
 def _sample_pixels(video_path, samples=5):
-    info = _probe(video_path)
-    duration = max(info["duration"], 0.1)
+    info = probe_video(video_path)
+    duration = max(info.duration, 0.1)
     pixels = []
     with tempfile.TemporaryDirectory() as tmp:
         for i in range(samples):
@@ -53,7 +25,7 @@ def _sample_pixels(video_path, samples=5):
     return np.concatenate(pixels, axis=0)
 
 
-def get_color_profile(video_path, samples=5):
+def get_color_profile(video_path: str, samples: int = 5) -> dict:
     """
     采样视频中的若干帧，计算 RGB 三通道的均值和标准差，用于了解视频的整体
     亮度/色调/对比度风格。
@@ -71,7 +43,14 @@ def get_color_profile(video_path, samples=5):
     }
 
 
-def match_color(reference_path, target_path, output_path=None, samples=5, strength=1.0):
+def match_color(
+    reference_path: str,
+    target_path: str,
+    output_path: str | None = None,
+    samples: int = 5,
+    strength: float = 1.0,
+    lossless: bool = False,
+) -> dict:
     """
     将 target_path 的色彩风格(亮度/对比度/色调)匹配到 reference_path，
     通过采样两个视频的帧、比较 RGB 通道的均值和标准差，计算每个通道的
@@ -105,10 +84,10 @@ def match_color(reference_path, target_path, output_path=None, samples=5, streng
         gains.append(gain)
         offsets.append(offset)
 
-    info = _probe(target_path)
+    info = probe_video(target_path)
 
     if output_path is None:
-        output_path = _default_output_path(target_path, "color_matched")
+        output_path = default_output_path(target_path, "color_matched")
     else:
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
@@ -119,9 +98,9 @@ def match_color(reference_path, target_path, output_path=None, samples=5, streng
     vf = "lutrgb=" + ":".join(exprs)
 
     args = ["-i", target_path, "-vf", vf]
-    if info["has_audio"]:
+    if info.has_audio:
         args += ["-c:a", "copy"]
-    args += [output_path]
+    args += (video_codec_args(True) if lossless else []) + [output_path]
 
     _run_ffmpeg(args)
     return {

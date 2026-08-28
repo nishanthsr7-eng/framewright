@@ -1,4 +1,3 @@
-import os
 import sys
 from typing import Annotated, Literal
 
@@ -7,7 +6,6 @@ from pydantic import Field
 if sys.platform == "win32":
     sys.stderr.reconfigure(encoding="utf-8")
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from framewright_core import run_tool as _run
 from framewright_core import setup_logging
@@ -27,7 +25,9 @@ def export_for_platform(
     video_path: Annotated[str, Field(description="Finished edit")],
     platform: Annotated[Platform, Field(description="Target platform preset")],
     output_path: Annotated[str | None, Field(description="Default: output/<video>/<video>_<platform>.<ext>")] = None,
-    fit_mode: Annotated[Literal["crop", "pad"], Field(description="crop fills the frame; pad keeps everything with bars")] = "crop",
+    fit_mode: Annotated[
+        Literal["crop", "pad"], Field(description="crop fills the frame; pad keeps everything with bars")
+    ] = "crop",
 ) -> dict:
     return _run(exporter.export_for_platform, video_path, platform, output_path=output_path, fit_mode=fit_mode)
 

@@ -1,6 +1,6 @@
 # Audio Mastering
 
-Finish the soundtrack: loudness normalization, denoise, and background music with automatic ducking under speech.
+Finish the soundtrack: loudness normalization, denoise and background music with automatic ducking under speech.
 
 ## Tools
 

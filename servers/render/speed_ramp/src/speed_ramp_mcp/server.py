@@ -1,4 +1,3 @@
-import os
 import sys
 from typing import Annotated
 
@@ -7,7 +6,6 @@ from pydantic import BaseModel, Field
 if sys.platform == "win32":
     sys.stderr.reconfigure(encoding="utf-8")
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from framewright_core import run_tool as _run
 from framewright_core import setup_logging
@@ -36,16 +34,25 @@ def change_speed(
     speed: Speed = 1.0,
     smooth: Smooth = True,
     output_path: Annotated[str | None, Field(description="Default: output/<video>/<video>_speed.<ext>")] = None,
+    lossless: Annotated[
+        bool, Field(description="Lossless H.264 intermediate for chaining tools; re-encode once at the end")
+    ] = False,
 ) -> dict:
     """Speed up or slow down a whole video; audio pitch is kept."""
-    return _run(sr.change_speed, input_path, speed=speed, smooth=smooth, output_path=output_path)
+    return _run(sr.change_speed, input_path, speed=speed, smooth=smooth, output_path=output_path, lossless=lossless)
 
 
 @mcp.tool()
 def speed_ramp(
     input_path: Annotated[str, Field(description="Source video")],
-    segments: Annotated[list[Segment], Field(min_length=1, description="Time ranges in order, not overlapping; only these ranges are kept")],
+    segments: Annotated[
+        list[Segment],
+        Field(min_length=1, description="Time ranges in order, not overlapping; only these ranges are kept"),
+    ],
     output_path: Annotated[str | None, Field(description="Default: output/<video>/<video>_ramp.<ext>")] = None,
+    lossless: Annotated[
+        bool, Field(description="Lossless H.264 intermediate for chaining tools; re-encode once at the end")
+    ] = False,
 ) -> dict:
     """Give each time range its own speed and join them, e.g. normal, slow-mo hit, fast exit."""
     prev_end = 0.0
@@ -55,7 +62,9 @@ def speed_ramp(
         if s.start < prev_end:
             raise ToolError(f"segments[{i}] overlaps the previous one; list ranges in time order")
         prev_end = s.end
-    return _run(sr.speed_ramp, input_path, [s.model_dump() for s in segments], output_path=output_path)
+    return _run(
+        sr.speed_ramp, input_path, [s.model_dump() for s in segments], output_path=output_path, lossless=lossless
+    )
 
 
 def main():

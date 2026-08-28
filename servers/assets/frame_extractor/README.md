@@ -1,6 +1,6 @@
 # Frame Extractor
 
-General ffmpeg utilities: video info, trim, concat, scale, frame extraction, and Real-ESRGAN upscaling of frames.
+General ffmpeg utilities: video info, trim, concat, scale, frame extraction and Real-ESRGAN upscaling of frames.
 
 ## Tools
 
@@ -43,3 +43,13 @@ Picture-in-picture lives in compositor `compose_layers`.
 ---
 
 Vendored from [video-creator/ffmpeg-mcp](https://github.com/video-creator/ffmpeg-mcp) (MIT, see [LICENSE](LICENSE)).
+
+**Upstream:** the ffmpeg logic in `cut_video.py`, `ffmpeg.py`, `typedef.py` and `utils.py`.
+
+**Changed here:**
+- `server.py` rewritten: typed tool params, `ToolError` on failure instead of `{"code": -1}` results, file checks up front.
+- Renamed to `frame-extractor-mcp`; ffmpeg/ffprobe are found on PATH instead of a bundled binary.
+- Timeout fix: a timed-out command is now killed and reported as a failure, instead of hanging.
+- Structured results: `{code, output_path, log_tail | error}` dicts instead of raw log strings.
+- Added `enhance_frames` (Real-ESRGAN) and `max_frames` / `every_seconds` on frame extraction.
+- Logging goes through `logging` (stderr) instead of `print`; Chinese comments and docstrings translated to English.

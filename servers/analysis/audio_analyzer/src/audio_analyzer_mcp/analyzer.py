@@ -7,6 +7,7 @@ import librosa
 import numpy as np
 
 VIDEO_EXTS = {".mp4", ".mkv", ".mov", ".avi", ".webm", ".m4v", ".flv"}
+SOUNDFILE_EXTS = {".wav", ".flac", ".ogg", ".aiff", ".aif"}
 
 
 def _load_audio(audio_path, sr=22050, offset=0.0, duration=None):
@@ -20,16 +21,26 @@ def _load_audio(audio_path, sr=22050, offset=0.0, duration=None):
     ext = os.path.splitext(audio_path)[1].lower()
     src_path = audio_path
     tmp_path = None
-    if ext in VIDEO_EXTS:
+    # Decode anything soundfile can't read with our own ffmpeg call: librosa's audioread
+    # fallback spawns ffmpeg with the MCP stdin attached and can hang.
+    if ext in VIDEO_EXTS or ext not in SOUNDFILE_EXTS:
         tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         tmp.close()
         tmp_path = tmp.name
         ffmpeg_sr = sr if sr else 44100
         cmd = [
-            "ffmpeg", "-y", "-i", audio_path,
-            "-vn", "-ac", "1", "-ar", str(ffmpeg_sr), tmp_path,
+            "ffmpeg",
+            "-y",
+            "-i",
+            audio_path,
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            str(ffmpeg_sr),
+            tmp_path,
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=900)
         if result.returncode != 0:
             os.remove(tmp_path)
             raise RuntimeError(f"ffmpeg could not extract the audio: {result.stderr[-1000:]}")
@@ -44,7 +55,7 @@ def _load_audio(audio_path, sr=22050, offset=0.0, duration=None):
     return y, sr
 
 
-def get_audio_info(audio_path):
+def get_audio_info(audio_path: str) -> dict:
     """
     返回音频/视频文件的基本信息：时长、采样率、整体响度(RMS)、估计的响度范围。
     """
@@ -59,7 +70,7 @@ def get_audio_info(audio_path):
     }
 
 
-def detect_beats(audio_path, start_time=0.0, duration=None):
+def detect_beats(audio_path: str, start_time: float = 0.0, duration: float | None = None) -> dict:
     """
     检测节拍/速度(BPM)以及每个节拍点的时间戳，可用于按节奏剪辑/卡点。
     """
@@ -74,7 +85,12 @@ def detect_beats(audio_path, start_time=0.0, duration=None):
     }
 
 
-def detect_downbeats(audio_path, start_time=0.0, duration=None, beats_per_bar=4):
+def detect_downbeats(
+    audio_path: str,
+    start_time: float = 0.0,
+    duration: float | None = None,
+    beats_per_bar: int = 4,
+) -> dict:
     """
     在节拍的基础上估计"重拍"(downbeat，每个小节的第一拍)的时间点，适合用作大段落/
     转场/最强特效的卡点（比单纯的节拍点更稀疏、更重）。
@@ -112,7 +128,12 @@ def detect_downbeats(audio_path, start_time=0.0, duration=None, beats_per_bar=4)
     }
 
 
-def detect_sections(audio_path, start_time=0.0, duration=None, n_sections=None):
+def detect_sections(
+    audio_path: str,
+    start_time: float = 0.0,
+    duration: float | None = None,
+    n_sections: int | None = None,
+) -> dict:
     """
     将音频分割为若干结构性段落(如 intro/build/drop/outro)，并按相对能量给出标签，
     适合定位"高潮/drop"位置以放置最强的特效/文字。
@@ -157,11 +178,13 @@ def detect_sections(audio_path, start_time=0.0, duration=None, n_sections=None):
         a, b = bound_frames[i], bound_frames[i + 1]
         if b <= a:
             continue
-        raw_sections.append({
-            "start": float(bound_times[i]),
-            "end": float(bound_times[i + 1]),
-            "energy": float(np.mean(rms[a:b])),
-        })
+        raw_sections.append(
+            {
+                "start": float(bound_times[i]),
+                "end": float(bound_times[i + 1]),
+                "energy": float(np.mean(rms[a:b])),
+            }
+        )
 
     if not raw_sections:
         return {"sections": []}
@@ -182,17 +205,24 @@ def detect_sections(audio_path, start_time=0.0, duration=None, n_sections=None):
             label = "build" if i < drop_idx else "chorus"
         else:
             label = "verse"
-        sections.append({
-            "label": label,
-            "start": round(s["start"] + start_time, 3),
-            "end": round(s["end"] + start_time, 3),
-            "energy": round(s["energy"] / max_e, 3) if max_e > 0 else 0.0,
-        })
+        sections.append(
+            {
+                "label": label,
+                "start": round(s["start"] + start_time, 3),
+                "end": round(s["end"] + start_time, 3),
+                "energy": round(s["energy"] / max_e, 3) if max_e > 0 else 0.0,
+            }
+        )
 
     return {"sections": sections}
 
 
-def detect_impacts(audio_path, start_time=0.0, duration=None, sensitivity=1.0):
+def detect_impacts(
+    audio_path: str,
+    start_time: float = 0.0,
+    duration: float | None = None,
+    sensitivity: float = 1.0,
+) -> dict:
     """
     检测音频中的"冲击/瞬态"时刻（鼓点、打击、突然的响度变化等），
     适合用作卡点/转场/特效触发的时间点。
@@ -203,15 +233,13 @@ def detect_impacts(audio_path, start_time=0.0, duration=None, sensitivity=1.0):
 
     onset_env = librosa.onset.onset_strength(y=y, sr=sr)
     delta = max(0.01, 0.07 / max(sensitivity, 0.01))
-    onset_frames = librosa.onset.onset_detect(
-        onset_envelope=onset_env, sr=sr, backtrack=True, delta=delta
-    )
+    onset_frames = librosa.onset.onset_detect(onset_envelope=onset_env, sr=sr, backtrack=True, delta=delta)
     onset_times = librosa.frames_to_time(onset_frames, sr=sr) + start_time
 
     # 每个瞬态点的相对强度 (0~1，相对于本片段最大值归一化)
     max_strength = float(np.max(onset_env)) if len(onset_env) > 0 and np.max(onset_env) > 0 else 1.0
     impacts = []
-    for frame, t in zip(onset_frames, onset_times):
+    for frame, t in zip(onset_frames, onset_times, strict=True):
         strength = float(onset_env[frame]) / max_strength if frame < len(onset_env) else 0.0
         impacts.append({"time": round(float(t), 3), "strength": round(strength, 3)})
 
@@ -221,7 +249,12 @@ def detect_impacts(audio_path, start_time=0.0, duration=None, sensitivity=1.0):
     }
 
 
-def analyze_audio_features(audio_path, start_time=0.0, duration=None, window=1.0):
+def analyze_audio_features(
+    audio_path: str,
+    start_time: float = 0.0,
+    duration: float | None = None,
+    window: float = 1.0,
+) -> dict:
     """
     按固定时间窗口分析音频的频谱/能量特征，输出每个窗口的:
       - rms (能量/响度)
@@ -246,12 +279,14 @@ def analyze_audio_features(audio_path, start_time=0.0, duration=None, window=1.0
         a, b = i * win_frames, min((i + 1) * win_frames, len(rms))
         if a >= b:
             break
-        windows.append({
-            "time": round(float(times[a] + start_time), 3),
-            "rms": round(float(np.mean(rms[a:b])), 5),
-            "spectral_centroid": round(float(np.mean(centroid[a:b])), 2),
-            "zero_crossing_rate": round(float(np.mean(zcr[a:b])), 5),
-        })
+        windows.append(
+            {
+                "time": round(float(times[a] + start_time), 3),
+                "rms": round(float(np.mean(rms[a:b])), 5),
+                "spectral_centroid": round(float(np.mean(centroid[a:b])), 2),
+                "zero_crossing_rate": round(float(np.mean(zcr[a:b])), 5),
+            }
+        )
 
     return {
         "window_seconds": window,
@@ -272,6 +307,7 @@ def _get_whisper_model(model_size):
     if model_size not in _WHISPER_MODELS:
         import ctranslate2
         from faster_whisper import WhisperModel
+
         model = None
         # GPU first (CUDA float16); fall back to CPU int8 if CUDA libs are missing
         if ctranslate2.get_cuda_device_count() > 0:
@@ -288,7 +324,12 @@ def _get_whisper_model(model_size):
     return _WHISPER_MODELS[model_size]
 
 
-def transcribe_audio(audio_path, model_size="base", language=None, word_timestamps=True):
+def transcribe_audio(
+    audio_path: str,
+    model_size: str = "base",
+    language: str | None = None,
+    word_timestamps: bool = True,
+) -> dict:
     """
     使用 faster-whisper 将音频/视频中的语音转录为文字，支持词级时间戳。
     首次调用某个 model_size 时会从 huggingface 自动下载模型权重（需要联网，之后会缓存）。
@@ -296,12 +337,14 @@ def transcribe_audio(audio_path, model_size="base", language=None, word_timestam
     ext = os.path.splitext(audio_path)[1].lower()
     src_path = audio_path
     tmp_path = None
-    if ext in VIDEO_EXTS:
+    # Decode anything soundfile can't read with our own ffmpeg call: librosa's audioread
+    # fallback spawns ffmpeg with the MCP stdin attached and can hang.
+    if ext in VIDEO_EXTS or ext not in SOUNDFILE_EXTS:
         tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         tmp.close()
         tmp_path = tmp.name
         cmd = ["ffmpeg", "-y", "-i", audio_path, "-vn", "-ac", "1", "-ar", "16000", tmp_path]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=900)
         if result.returncode != 0:
             os.remove(tmp_path)
             raise RuntimeError(f"ffmpeg could not extract the audio: {result.stderr[-1000:]}")
@@ -309,9 +352,7 @@ def transcribe_audio(audio_path, model_size="base", language=None, word_timestam
 
     try:
         model = _get_whisper_model(model_size)
-        segments_iter, info = model.transcribe(
-            src_path, language=language, word_timestamps=word_timestamps
-        )
+        segments_iter, info = model.transcribe(src_path, language=language, word_timestamps=word_timestamps)
 
         segments = []
         full_text_parts = []
@@ -319,17 +360,21 @@ def transcribe_audio(audio_path, model_size="base", language=None, word_timestam
             words = []
             if word_timestamps and seg.words:
                 for w in seg.words:
-                    words.append({
-                        "word": w.word.strip(),
-                        "start": round(float(w.start), 3),
-                        "end": round(float(w.end), 3),
-                    })
-            segments.append({
-                "start": round(float(seg.start), 3),
-                "end": round(float(seg.end), 3),
-                "text": seg.text.strip(),
-                "words": words,
-            })
+                    words.append(
+                        {
+                            "word": w.word.strip(),
+                            "start": round(float(w.start), 3),
+                            "end": round(float(w.end), 3),
+                        }
+                    )
+            segments.append(
+                {
+                    "start": round(float(seg.start), 3),
+                    "end": round(float(seg.end), 3),
+                    "text": seg.text.strip(),
+                    "words": words,
+                }
+            )
             full_text_parts.append(seg.text.strip())
     finally:
         if tmp_path is not None:

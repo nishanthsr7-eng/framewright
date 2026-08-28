@@ -1,33 +1,10 @@
-import json
 import os
 import subprocess
 from functools import partial
 
-from framewright_core import output_root as _get_output_root
-from framewright_core import run_ffmpeg
+from framewright_core import default_output_path, probe_video, run_ffmpeg, video_codec_args
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".tif", ".tiff"}
-
-
-def _probe(path):
-    cmd = [
-        "ffprobe", "-v", "error", "-print_format", "json",
-        "-show_format", "-show_streams", path,
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
-    data = json.loads(result.stdout)
-    vstream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
-    has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
-    width = int(vstream["width"]) if vstream else None
-    height = int(vstream["height"]) if vstream else None
-    duration = float(
-        data["format"].get("duration")
-        or (vstream.get("duration") if vstream else 0)
-        or 0.0
-    )
-    return {"width": width, "height": height, "duration": duration, "has_audio": has_audio}
 
 
 _run_ffmpeg = partial(run_ffmpeg, timeout=900)
@@ -35,9 +12,22 @@ _run_ffmpeg = partial(run_ffmpeg, timeout=900)
 
 def _video_codec(path):
     result = subprocess.run(
-        ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name",
-         "-of", "csv=p=0", path],
-        capture_output=True, text=True, timeout=60,
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=codec_name",
+            "-of",
+            "csv=p=0",
+            path,
+        ],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=60,
     )
     return result.stdout.strip()
 
@@ -46,14 +36,12 @@ def _is_image(path):
     return os.path.splitext(path)[1].lower() in IMAGE_EXTS
 
 
-def _default_output_path(base_video):
-    base, ext = os.path.splitext(os.path.basename(base_video))
-    out_dir = os.path.join(_get_output_root(), base)
-    os.makedirs(out_dir, exist_ok=True)
-    return os.path.join(out_dir, f"{base}_composite{ext if ext else '.mp4'}")
-
-
-def compose_layers(base_video, layers, output_path=None):
+def compose_layers(
+    base_video: str,
+    layers: list[dict],
+    output_path: str | None = None,
+    lossless: bool = False,
+) -> dict:
     """
     将多个图层(图片/视频, 含 alpha 透明通道)按位置/时间区间叠加合成到 base_video 上。
 
@@ -73,15 +61,15 @@ def compose_layers(base_video, layers, output_path=None):
     if not layers:
         raise ValueError("layers is empty")
 
-    base_info = _probe(base_video)
-    total = base_info["duration"]
+    base_info = probe_video(base_video, require_video=False)
+    total = base_info.duration
 
     input_args = ["-i", base_video]
     filter_parts = []
     last_label = "0:v"
 
     audio_inputs = []
-    if base_info["has_audio"]:
+    if base_info.has_audio:
         audio_inputs.append((0, 0.0))
 
     for i, layer in enumerate(layers):
@@ -132,8 +120,7 @@ def compose_layers(base_video, layers, output_path=None):
         y = layer.get("y", 0)
         out_label = f"v{idx}"
         filter_parts.append(
-            f"[{last_label}][{layer_label}]overlay=x={x}:y={y}:"
-            f"enable='between(t,{start},{end})'[{out_label}]"
+            f"[{last_label}][{layer_label}]overlay=x={x}:y={y}:enable='between(t,{start},{end})'[{out_label}]"
         )
         last_label = out_label
 
@@ -157,22 +144,20 @@ def compose_layers(base_video, layers, output_path=None):
             else:
                 mix_labels.append(f"{input_idx}:a")
         labels_str = "".join(f"[{l}]" for l in mix_labels)
-        filter_parts.append(
-            f"{labels_str}amix=inputs={len(mix_labels)}:duration=first:dropout_transition=0[aout]"
-        )
+        filter_parts.append(f"{labels_str}amix=inputs={len(mix_labels)}:duration=first:dropout_transition=0[aout]")
         audio_label = "aout"
 
     filter_complex = ";".join(filter_parts)
 
     if output_path is None:
-        output_path = _default_output_path(base_video)
+        output_path = default_output_path(base_video, "composite")
     else:
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
     args = input_args + ["-filter_complex", filter_complex, "-map", f"[{final_video_label}]"]
     if audio_label is not None:
         args += ["-map", "0:a" if audio_label == "0:a" else f"[{audio_label}]"]
-    args += [output_path]
+    args += (video_codec_args(True) if lossless else []) + [output_path]
 
     _run_ffmpeg(args)
     return {"output_path": output_path, "layer_count": len(layers), "duration": total}

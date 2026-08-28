@@ -1,7 +1,9 @@
 """One-off script: generates the bundled .cube LUT files in src/lut_grading_mcp/luts/.
 Run with: python generate_luts.py
 """
+
 import os
+from collections.abc import Callable
 
 import numpy as np
 
@@ -9,7 +11,7 @@ SIZE = 17
 OUT_DIR = os.path.join(os.path.dirname(__file__), "src", "lut_grading_mcp", "luts")
 
 
-def write_cube(name, transform):
+def write_cube(name: str, transform: Callable[[float, float, float], tuple[float, float, float]]) -> None:
     os.makedirs(OUT_DIR, exist_ok=True)
     path = os.path.join(OUT_DIR, f"{name}.cube")
     lines = [f"LUT_3D_SIZE {SIZE}"]
@@ -27,7 +29,7 @@ def write_cube(name, transform):
     print(f"wrote {path}")
 
 
-def cinematic_teal_orange(r, g, b):
+def cinematic_teal_orange(r: float, g: float, b: float) -> tuple[float, float, float]:
     lum = 0.299 * r + 0.587 * g + 0.114 * b
     shadow_w = max(0.0, (0.5 - lum) * 2.0)
     highlight_w = max(0.0, (lum - 0.5) * 2.0)
@@ -37,7 +39,7 @@ def cinematic_teal_orange(r, g, b):
     return nr, ng, nb
 
 
-def warm_vintage(r, g, b):
+def warm_vintage(r: float, g: float, b: float) -> tuple[float, float, float]:
     # lift blacks
     r2, g2, b2 = r * 0.9 + 0.06, g * 0.9 + 0.05, b * 0.9 + 0.04
     # warm tint
@@ -52,7 +54,7 @@ def warm_vintage(r, g, b):
     return r2, g2, b2
 
 
-def cool_blue(r, g, b):
+def cool_blue(r: float, g: float, b: float) -> tuple[float, float, float]:
     nr = r - 0.04
     ng = g
     nb = b + 0.08
@@ -66,13 +68,13 @@ def cool_blue(r, g, b):
     return nr, ng, nb
 
 
-def high_contrast_bw(r, g, b):
+def high_contrast_bw(r: float, g: float, b: float) -> tuple[float, float, float]:
     lum = 0.299 * r + 0.587 * g + 0.114 * b
     lum2 = 0.5 + (lum - 0.5) * 1.4
     return lum2, lum2, lum2
 
 
-def faded_film(r, g, b):
+def faded_film(r: float, g: float, b: float) -> tuple[float, float, float]:
     # lift blacks + compress highlights
     r2, g2, b2 = r * 0.82 + 0.09, g * 0.82 + 0.085, b * 0.82 + 0.08
     # desaturate
@@ -86,7 +88,7 @@ def faded_film(r, g, b):
     return r2, g2, b2
 
 
-def moody_green(r, g, b):
+def moody_green(r: float, g: float, b: float) -> tuple[float, float, float]:
     lum = 0.299 * r + 0.587 * g + 0.114 * b
     nr = r - 0.03
     ng = g + 0.05
@@ -99,7 +101,7 @@ def moody_green(r, g, b):
     return nr, ng, nb
 
 
-def bleach_bypass(r, g, b):
+def bleach_bypass(r: float, g: float, b: float) -> tuple[float, float, float]:
     lum = 0.299 * r + 0.587 * g + 0.114 * b
     sat = 0.4
     nr = lum + (r - lum) * sat
@@ -112,7 +114,7 @@ def bleach_bypass(r, g, b):
     return nr, ng, nb
 
 
-def anime_vibrant(r, g, b):
+def anime_vibrant(r: float, g: float, b: float) -> tuple[float, float, float]:
     # flat cel colours: more saturation, gentle contrast, clean whites
     lum = 0.299 * r + 0.587 * g + 0.114 * b
     sat = 1.25

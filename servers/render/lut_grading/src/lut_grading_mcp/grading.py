@@ -1,7 +1,6 @@
 import os
-import subprocess
 
-from framewright_core import output_root as _get_output_root
+from framewright_core import default_output_path, probe_video, video_codec_args
 from framewright_core import run_ffmpeg as _run_ffmpeg
 
 LUTS_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "luts")
@@ -18,36 +17,17 @@ BUILTIN_LUTS = {
 }
 
 
-def _default_output_path(input_path, suffix, ext=None):
-    base = os.path.splitext(os.path.basename(input_path))[0]
-    ext = ext or os.path.splitext(input_path)[1] or ".mp4"
-    out_dir = os.path.join(_get_output_root(), base)
-    os.makedirs(out_dir, exist_ok=True)
-    return os.path.join(out_dir, f"{base}_{suffix}{ext}")
-
-
-def _probe(path):
-    cmd = ["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", path]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
-    import json
-    data = json.loads(result.stdout)
-    has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
-    has_video = any(s["codec_type"] == "video" for s in data["streams"])
-    duration = float(data["format"].get("duration") or 0.0)
-    return {"has_video": has_video, "has_audio": has_audio, "duration": duration}
-
-
 def _escape_filter_path(path):
     p = os.path.abspath(path).replace("\\", "/")
     p = p.replace(":", "\\:")
     return p
 
 
-def list_luts():
-    return {name: {"description": desc, "path": os.path.join(LUTS_DIR, f"{name}.cube")}
-            for name, desc in BUILTIN_LUTS.items()}
+def list_luts() -> dict:
+    return {
+        name: {"description": desc, "path": os.path.join(LUTS_DIR, f"{name}.cube")}
+        for name, desc in BUILTIN_LUTS.items()
+    }
 
 
 def _resolve_lut_path(lut):
@@ -56,17 +36,22 @@ def _resolve_lut_path(lut):
     if os.path.exists(lut):
         return lut
     raise FileNotFoundError(
-        f"未找到 LUT: {lut}。可用内置 LUT: {', '.join(BUILTIN_LUTS.keys())}，"
-        f"或提供一个存在的 .cube 文件路径。"
+        f"未找到 LUT: {lut}。可用内置 LUT: {', '.join(BUILTIN_LUTS.keys())}，或提供一个存在的 .cube 文件路径。"
     )
 
 
-def apply_lut(input_path, lut, intensity=1.0, output_path=None):
+def apply_lut(
+    input_path: str,
+    lut: str,
+    intensity: float = 1.0,
+    output_path: str | None = None,
+    lossless: bool = False,
+) -> dict:
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"File not found: {input_path}")
 
-    info = _probe(input_path)
-    if not info["has_video"]:
+    info = probe_video(input_path, require_video=False)
+    if not info.has_video:
         raise RuntimeError(f"File has no video stream: {input_path}")
 
     lut_path = _resolve_lut_path(lut)
@@ -74,7 +59,7 @@ def apply_lut(input_path, lut, intensity=1.0, output_path=None):
 
     intensity = max(0.0, min(1.0, float(intensity)))
     if output_path is None:
-        output_path = _default_output_path(input_path, "graded")
+        output_path = default_output_path(input_path, "graded")
     else:
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
@@ -88,11 +73,11 @@ def apply_lut(input_path, lut, intensity=1.0, output_path=None):
             f"[orig][graded]blend=all_mode=normal:all_opacity={intensity}[vout]"
         )
         args += ["-filter_complex", filter_complex, "-map", "[vout]"]
-        if info["has_audio"]:
+        if info.has_audio:
             args += ["-map", "0:a"]
 
-    if info["has_audio"]:
+    if info.has_audio:
         args += ["-c:a", "copy"]
-    args += [output_path]
+    args += (video_codec_args(True) if lossless else []) + [output_path]
     _run_ffmpeg(args)
     return {"output_path": output_path, "lut": lut, "intensity": intensity}

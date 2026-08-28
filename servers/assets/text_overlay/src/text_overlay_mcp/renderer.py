@@ -39,7 +39,7 @@ FONT_FILES = {
 }
 
 
-def list_fonts():
+def list_fonts() -> list[str]:
     return sorted(FONT_FILES.keys())
 
 
@@ -104,8 +104,7 @@ def _text_masks(text, font, ox, oy, w, h, outline_width):
     ImageDraw.Draw(interior).text((ox, oy), text, font=font, fill=255)
     if outline_width > 0:
         full = Image.new("L", (w, h), 0)
-        ImageDraw.Draw(full).text((ox, oy), text, font=font, fill=255,
-                                   stroke_width=outline_width, stroke_fill=255)
+        ImageDraw.Draw(full).text((ox, oy), text, font=font, fill=255, stroke_width=outline_width, stroke_fill=255)
         ring = ImageChops.subtract(full, interior)
     else:
         full = interior
@@ -113,8 +112,16 @@ def _text_masks(text, font, ox, oy, w, h, outline_width):
     return interior, ring, full
 
 
-def render_text_block(text, font, color, outline_color=None, outline_width=0,
-                       shadow=False, shadow_offset=(6, 6), shadow_blur=4):
+def render_text_block(
+    text: str,
+    font: ImageFont.FreeTypeFont,
+    color: str,
+    outline_color: str | None = None,
+    outline_width: int = 0,
+    shadow: bool = False,
+    shadow_offset: tuple[int, int] = (6, 6),
+    shadow_blur: int = 4,
+) -> Image.Image:
     """
     渲染单个文字片段（一个词或一行）为带透明背景的 RGBA 图像。
 
@@ -180,10 +187,19 @@ def _word_alpha(idx, total, progress, animation):
     return 1.0
 
 
-def render_karaoke_frame(canvas_size, words, t, font_name="anton", font_size=60,
-                          color="#FFFFFF", highlight_color="#FFD700",
-                          outline_color="#000000", outline_width=4, shadow=False,
-                          position="bottom"):
+def render_karaoke_frame(
+    canvas_size: tuple[int, int],
+    words: list[dict],
+    t: float,
+    font_name: str = "anton",
+    font_size: int = 60,
+    color: str = "#FFFFFF",
+    highlight_color: str = "#FFD700",
+    outline_color: str = "#000000",
+    outline_width: int = 4,
+    shadow: bool = False,
+    position: str = "bottom",
+) -> Image.Image:
     """
     渲染一帧"卡拉OK"字幕：words 为当前行的单词列表 [{word, start, end}, ...]，
     已经开始播放(t >= word.start)的词使用 highlight_color 高亮，其余词使用 color。
@@ -225,10 +241,20 @@ def render_karaoke_frame(canvas_size, words, t, font_name="anton", font_size=60,
     return canvas
 
 
-def render_frame(canvas_size, text, font_name="anton", font_size=80, color="#FFFFFF",
-                  outline_color="#000000", outline_width=0, shadow=False,
-                  position="center", progress=1.0, animation="word_by_word",
-                  line_spacing=1.2):
+def render_frame(
+    canvas_size: tuple[int, int],
+    text: str,
+    font_name: str = "anton",
+    font_size: int = 80,
+    color: str = "#FFFFFF",
+    outline_color: str = "#000000",
+    outline_width: int = 0,
+    shadow: bool = False,
+    position: str = "center",
+    progress: float = 1.0,
+    animation: str = "word_by_word",
+    line_spacing: float = 1.2,
+) -> Image.Image:
     """
     渲染一帧叠加层（RGBA，尺寸与视频画布相同）。
 

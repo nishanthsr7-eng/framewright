@@ -1,46 +1,19 @@
-import json
 import os
-import subprocess
 from functools import partial
 
-from framewright_core import output_root as _get_output_root
-from framewright_core import run_ffmpeg
-
-
-def _probe(path):
-    cmd = [
-        "ffprobe", "-v", "error", "-print_format", "json",
-        "-show_format", "-show_streams", path,
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
-    data = json.loads(result.stdout)
-    has_video = any(s["codec_type"] == "video" for s in data["streams"])
-    has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
-    duration = float(data["format"].get("duration") or 0.0)
-    return {"has_video": has_video, "has_audio": has_audio, "duration": duration}
-
+from framewright_core import default_output_path, probe_video, run_ffmpeg
 
 _run_ffmpeg = partial(run_ffmpeg, timeout=900)
 
 
-def _default_output_path(input_path, suffix, ext=None):
-    base, in_ext = os.path.splitext(os.path.basename(input_path))
-    out_dir = os.path.join(_get_output_root(), base)
-    os.makedirs(out_dir, exist_ok=True)
-    use_ext = ext if ext else (in_ext if in_ext else ".wav")
-    return os.path.join(out_dir, f"{base}_{suffix}{use_ext}")
-
-
 def _make_output_path(output_path, input_path, suffix):
     if output_path is None:
-        return _default_output_path(input_path, suffix)
+        return default_output_path(input_path, suffix, default_ext=".wav")
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     return output_path
 
 
-def normalize_loudness(input_path, target_lufs=-14.0, output_path=None):
+def normalize_loudness(input_path: str, target_lufs: float = -14.0, output_path: str | None = None) -> dict:
     """
     对音频/视频的音轨进行响度归一化(EBU R128 loudnorm)，使整体音量
     达到目标 LUFS(常见目标: -14 适合 YouTube/流媒体, -16 适合播客, -23 适合广播)。
@@ -48,15 +21,15 @@ def normalize_loudness(input_path, target_lufs=-14.0, output_path=None):
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"File not found: {input_path}")
 
-    info = _probe(input_path)
-    if not info["has_audio"]:
+    info = probe_video(input_path, require_video=False)
+    if not info.has_audio:
         raise RuntimeError(f"File has no audio track: {input_path}")
 
     out = _make_output_path(output_path, input_path, "normalized")
     af = f"loudnorm=I={target_lufs}:TP=-1.5:LRA=11"
 
     args = ["-i", input_path, "-af", af]
-    if info["has_video"]:
+    if info.has_video:
         args += ["-c:v", "copy"]
     args += [out]
 
@@ -64,7 +37,7 @@ def normalize_loudness(input_path, target_lufs=-14.0, output_path=None):
     return {"output_path": out, "target_lufs": target_lufs}
 
 
-def reduce_noise(input_path, amount=12, output_path=None):
+def reduce_noise(input_path: str, amount: int = 12, output_path: str | None = None) -> dict:
     """
     使用 ffmpeg afftdn 对音频/视频的音轨进行降噪。
 
@@ -73,15 +46,15 @@ def reduce_noise(input_path, amount=12, output_path=None):
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"File not found: {input_path}")
 
-    info = _probe(input_path)
-    if not info["has_audio"]:
+    info = probe_video(input_path, require_video=False)
+    if not info.has_audio:
         raise RuntimeError(f"File has no audio track: {input_path}")
 
     out = _make_output_path(output_path, input_path, "denoised")
     af = f"afftdn=nr={amount}"
 
     args = ["-i", input_path, "-af", af]
-    if info["has_video"]:
+    if info.has_video:
         args += ["-c:v", "copy"]
     args += [out]
 
@@ -89,8 +62,16 @@ def reduce_noise(input_path, amount=12, output_path=None):
     return {"output_path": out, "amount": amount}
 
 
-def add_background_music(video_path, music_path, music_volume_db=-20.0, duck=True,
-                          duck_threshold_db=-30.0, duck_ratio=8.0, loop=True, output_path=None):
+def add_background_music(
+    video_path: str,
+    music_path: str,
+    music_volume_db: float = -20.0,
+    duck: bool = True,
+    duck_threshold_db: float = -30.0,
+    duck_ratio: float = 8.0,
+    loop: bool = True,
+    output_path: str | None = None,
+) -> dict:
     """
     为视频添加背景音乐，与原始音轨混合。
 
@@ -105,8 +86,8 @@ def add_background_music(video_path, music_path, music_volume_db=-20.0, duck=Tru
     if not os.path.exists(music_path):
         raise FileNotFoundError(f"File not found: {music_path}")
 
-    video_info = _probe(video_path)
-    if not video_info["has_video"]:
+    video_info = probe_video(video_path, require_video=False)
+    if not video_info.has_video:
         raise RuntimeError(f"Not a video file: {video_path}")
 
     out = _make_output_path(output_path, video_path, "with_music")
@@ -116,15 +97,14 @@ def add_background_music(video_path, music_path, music_volume_db=-20.0, duck=Tru
         input_args += ["-stream_loop", "-1"]
     input_args += ["-i", music_path]
 
-    music_dur = video_info["duration"]
+    music_dur = video_info.duration
     threshold = 10 ** (duck_threshold_db / 20.0)
 
-    if video_info["has_audio"]:
+    if video_info.has_audio:
         music_chain = f"[1:a]volume={music_volume_db}dB,atrim=duration={music_dur}[music]"
         if duck:
             duck_chain = (
-                f"[music][0:a]sidechaincompress=threshold={threshold}:ratio={duck_ratio}:"
-                f"attack=20:release=300[ducked]"
+                f"[music][0:a]sidechaincompress=threshold={threshold}:ratio={duck_ratio}:attack=20:release=300[ducked]"
             )
             mix_chain = "[0:a][ducked]amix=inputs=2:duration=first:dropout_transition=0[aout]"
             filter_complex = ";".join([music_chain, duck_chain, mix_chain])
@@ -137,9 +117,14 @@ def add_background_music(video_path, music_path, music_volume_db=-20.0, duck=Tru
         audio_label = "aout"
 
     args = input_args + [
-        "-filter_complex", filter_complex,
-        "-map", "0:v", "-map", f"[{audio_label}]",
-        "-c:v", "copy",
+        "-filter_complex",
+        filter_complex,
+        "-map",
+        "0:v",
+        "-map",
+        f"[{audio_label}]",
+        "-c:v",
+        "copy",
         out,
     ]
 
