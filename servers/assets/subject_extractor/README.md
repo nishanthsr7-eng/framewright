@@ -6,13 +6,14 @@ Cut the main subject out of every frame in a folder and save transparent PNGs, r
 
 | Tool | Key inputs | Output |
 |---|---|---|
-| `extract_subject` | `input_folder`, `style`=general, `with_background`, `threshold`=0, `skip_existing`=True | folder of RGBA PNGs (+ optional backgrounds) |
+| `extract_subject` | `input_folder`, `style`=general (`anime` \| `general` \| `general_hq`), `with_background`, `threshold`=0, `skip_existing`=True | folder of RGBA PNGs (+ optional backgrounds) |
+| `frames_to_alpha_video` | `input_folder`, `fps`=24, `output_path`, `lossless`=False | VP9 `.webm` with alpha (Resolve, compositor) |
 
 All tools return a dict (usually with `output_path`). Outputs default to `output/` at the repo root.
 
 ## Requirements
 
-- onnxruntime; models `models/isnet/isnetis.onnx` and `models/isnet/u2net.onnx` (`python scripts/fetch_models.py isnet u2net`)
+- onnxruntime; models `models/isnet/isnetis.onnx` and `models/isnet/u2net.onnx` (`python scripts/fetch_models.py isnet u2net`); optional `models/isnet/birefnet_lite.onnx` for `general_hq` (`python scripts/fetch_models.py birefnet`, ~224 MB)
 - Install: `uv sync --directory servers/assets/subject_extractor`
 - Run: `uv run --directory servers/assets/subject_extractor subject-extractor-mcp`
 
@@ -30,7 +31,7 @@ All tools return a dict (usually with `output_path`). Outputs default to `output
 
 ## Anime vs general footage
 
-`style="anime"` uses ISNet (anime-seg) at 1024px; `style="general"` uses U2-Net at 320px for people and objects. Use `threshold` > 0 for hard edges.
+`style="anime"` uses ISNet (anime-seg) at 1024px; `style="general"` uses U2-Net at 320px for people and objects; `style="general_hq"` (opt-in) uses BiRefNet-lite at 1024px for sharper hair and edges, at a higher cost in time and memory. Use `threshold` > 0 for hard edges.
 
 ## Credits
 

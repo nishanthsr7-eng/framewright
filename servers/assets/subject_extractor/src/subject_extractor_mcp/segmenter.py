@@ -11,9 +11,21 @@ from PIL import Image
 #   general_hq - BiRefNet-lite matting, sharper hair/edges. Input: ImageNet-normalized, 1024px. Output: logits.
 MODELS = {
     "anime": {"file": "isnetis.onnx", "size": 1024, "mean": (0.0, 0.0, 0.0), "std": (1.0, 1.0, 1.0), "letterbox": True},
-    "general": {"file": "u2net.onnx", "size": 320, "mean": (0.485, 0.456, 0.406), "std": (0.229, 0.224, 0.225), "letterbox": False},
-    "general_hq": {"file": "birefnet_lite.onnx", "size": 1024, "mean": (0.485, 0.456, 0.406), "std": (0.229, 0.224, 0.225),
-                   "letterbox": False, "logits": True},
+    "general": {
+        "file": "u2net.onnx",
+        "size": 320,
+        "mean": (0.485, 0.456, 0.406),
+        "std": (0.229, 0.224, 0.225),
+        "letterbox": False,
+    },
+    "general_hq": {
+        "file": "birefnet_lite.onnx",
+        "size": 1024,
+        "mean": (0.485, 0.456, 0.406),
+        "std": (0.229, 0.224, 0.225),
+        "letterbox": False,
+        "logits": True,
+    },
 }
 
 _sessions = {}
@@ -66,7 +78,7 @@ def get_mask(img: np.ndarray, style: str = "anime", size: int | None = None) -> 
         resized = np.asarray(Image.fromarray(img).resize((w, h), Image.BILINEAR), dtype=np.float32) / 255.0
         ph, pw = size - h, size - w
         inp = np.zeros((size, size, 3), dtype=np.float32)
-        inp[ph // 2: ph // 2 + h, pw // 2: pw // 2 + w] = resized
+        inp[ph // 2 : ph // 2 + h, pw // 2 : pw // 2 + w] = resized
     else:
         inp = np.asarray(Image.fromarray(img).resize((size, size), Image.BILINEAR), dtype=np.float32) / 255.0
 
@@ -78,7 +90,7 @@ def get_mask(img: np.ndarray, style: str = "anime", size: int | None = None) -> 
     if cfg.get("logits"):
         pred = 1.0 / (1.0 + np.exp(-pred))
     elif cfg["letterbox"]:
-        pred = pred[ph // 2: ph // 2 + h, pw // 2: pw // 2 + w]
+        pred = pred[ph // 2 : ph // 2 + h, pw // 2 : pw // 2 + w]
     else:
         lo, hi = float(pred.min()), float(pred.max())
         pred = (pred - lo) / (hi - lo + 1e-8)
@@ -88,7 +100,12 @@ def get_mask(img: np.ndarray, style: str = "anime", size: int | None = None) -> 
     return np.asarray(pred, dtype=np.float32) / 255.0
 
 
-def smooth_mask(mask, arr, prev, strength):
+def smooth_mask(
+    mask: np.ndarray,
+    arr: np.ndarray,
+    prev: tuple[np.ndarray, np.ndarray] | None,
+    strength: float,
+) -> np.ndarray:
     """Blend with the previous frame's mask where the image barely changed, to stop flicker.
 
     Moving pixels keep the fresh mask, so there's no ghost trail behind the subject.
@@ -103,8 +120,16 @@ def smooth_mask(mask, arr, prev, strength):
     return weight * prev_mask + (1.0 - weight) * mask
 
 
-def split_subject_and_background(image_path, subject_path, background_path=None, style="anime", size=None,
-                                 threshold=0.0, prev=None, smoothing=0.0):
+def split_subject_and_background(
+    image_path: str,
+    subject_path: str,
+    background_path: str | None = None,
+    style: str = "anime",
+    size: int | None = None,
+    threshold: float = 0.0,
+    prev: tuple[np.ndarray, np.ndarray] | None = None,
+    smoothing: float = 0.0,
+) -> tuple[np.ndarray, np.ndarray]:
     """Write an RGBA cut-out of the subject (and optionally the background with the subject removed).
 
     Returns (frame, smoothed_mask) to pass as `prev` for the next frame.
