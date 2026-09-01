@@ -22,8 +22,12 @@ if (-not $Dest) {
 
 # source folder -> target folder under the Fusion folder
 $map = @(
-    @{ From = "scripts\Edit";          To = "Scripts\Edit" },
-    @{ From = "scripts\Utility";       To = "Scripts\Utility" },
+    @{ From = "scripts\Edit\Framewright";     To = "Scripts\Edit\Framewright" },
+    @{ From = "scripts\Edit\Markers";         To = "Scripts\Edit\Markers" },
+    @{ From = "scripts\Edit\Clips";           To = "Scripts\Edit\Clips" },
+    @{ From = "scripts\Utility\Export";       To = "Scripts\Utility\Export" },
+    @{ From = "scripts\Utility\Timeline";     To = "Scripts\Utility\Timeline" },
+    @{ From = "scripts\Utility\Media Pool";   To = "Scripts\Utility\Media Pool" },
     @{ From = "templates\Titles";      To = "Templates\Edit\Titles" },
     @{ From = "templates\Effects";     To = "Templates\Edit\Effects" },
     @{ From = "templates\Transitions"; To = "Templates\Edit\Transitions" },
@@ -60,8 +64,8 @@ foreach ($m in $map) {
     }
 }
 
-# Framewright_Build_Plan.lua can't read env vars or files in Resolve's sandbox: bake in the repo path.
-$fw = Join-Path $Dest "Scripts\Edit\Framewright_Build_Plan.lua"
+# framewright_build_plan.lua can't read env vars or files in Resolve's sandbox: bake in the repo path.
+$fw = Join-Path $Dest "Scripts\Edit\Framewright\framewright_build_plan.lua"
 if (-not $Uninstall -and -not $DryRun -and (Test-Path $fw)) {
     $root = (Split-Path $src -Parent) -replace "\\", "/"
     $text = [IO.File]::ReadAllText($fw).Replace("__FRAMEWRIGHT_ROOT__", $root)

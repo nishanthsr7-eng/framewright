@@ -42,8 +42,12 @@ mode="Installing"; [ "$uninstall" -eq 1 ] && mode="Removing"
 echo "$mode -> $dest"
 
 # source folder:target folder under the Fusion folder
-map="scripts/Edit:Scripts/Edit
-scripts/Utility:Scripts/Utility
+map="scripts/Edit/Framewright:Scripts/Edit/Framewright
+scripts/Edit/Markers:Scripts/Edit/Markers
+scripts/Edit/Clips:Scripts/Edit/Clips
+scripts/Utility/Export:Scripts/Utility/Export
+scripts/Utility/Timeline:Scripts/Utility/Timeline
+scripts/Utility/Media Pool:Scripts/Utility/Media Pool
 templates/Titles:Templates/Edit/Titles
 templates/Effects:Templates/Edit/Effects
 templates/Transitions:Templates/Edit/Transitions
