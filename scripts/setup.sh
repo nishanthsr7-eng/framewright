@@ -16,13 +16,9 @@ for cmd in uv ffmpeg ffprobe; do
   command -v "$cmd" >/dev/null || { echo "$cmd not found on PATH. Install it first (see docs/setup.md)." >&2; exit 1; }
 done
 
-failed=()
-for proj in "$ROOT"/servers/*/*/pyproject.toml; do
-  dir="$(dirname "$proj")"
-  echo "[sync] $(basename "$(dirname "$dir")")/$(basename "$dir")"
-  uv sync --quiet --directory "$dir" || failed+=("$(basename "$dir")")
-done
-if [ ${#failed[@]} -gt 0 ]; then echo "uv sync failed for: ${failed[*]}" >&2; exit 1; fi
+# One workspace, one lockfile: install every server into the root .venv.
+echo "[sync] all servers"
+uv sync --quiet --all-packages --directory "$ROOT" || { echo "uv sync failed (see above)." >&2; exit 1; }
 
 if [ "$SKIP_MODELS" -eq 0 ]; then
   uv run --no-project python "$ROOT/scripts/fetch_models.py" || { echo "Model download failed. Retry: python scripts/fetch_models.py" >&2; exit 1; }

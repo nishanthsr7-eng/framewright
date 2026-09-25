@@ -7,6 +7,7 @@ Usage:
 Exits non-zero if any server fails to start or reports no tools.
 Stdlib only (Python 3.10+).
 """
+
 from __future__ import annotations
 
 import json
@@ -46,8 +47,8 @@ def _rpc(proc: subprocess.Popen, lines: queue.Queue, msg: dict) -> dict | None:
             raise RuntimeError("server exited")
         try:
             reply = json.loads(line)
-        except json.JSONDecodeError:
-            raise RuntimeError(f"non-JSON on stdout: {line[:120]!r}")
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f"non-JSON on stdout: {line[:120]!r}") from e
         if reply.get("id") == msg["id"]:
             if "error" in reply:
                 raise RuntimeError(reply["error"].get("message", "error"))
@@ -60,8 +61,11 @@ def check(server_dir: Path) -> tuple[bool, str]:
         return False, "no [project.scripts] entry"
     proc = subprocess.Popen(
         ["uv", "run", "--quiet", "--directory", str(server_dir), script],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        text=True, encoding="utf-8",
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
     )
     lines: queue.Queue = queue.Queue()
     err: list[str] = []
@@ -75,9 +79,20 @@ def check(server_dir: Path) -> tuple[bool, str]:
     threading.Thread(target=pump, args=(proc.stdout, lines.put), daemon=True).start()
     threading.Thread(target=pump, args=(proc.stderr, err.append), daemon=True).start()
     try:
-        _rpc(proc, lines, {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
-            "protocolVersion": "2024-11-05", "capabilities": {},
-            "clientInfo": {"name": "framewright-smoke", "version": "1"}}})
+        _rpc(
+            proc,
+            lines,
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "framewright-smoke", "version": "1"},
+                },
+            },
+        )
         _rpc(proc, lines, {"jsonrpc": "2.0", "method": "notifications/initialized"})
         tools = _rpc(proc, lines, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})["tools"]
         if not tools:

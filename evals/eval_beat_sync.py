@@ -6,6 +6,7 @@ evals/fixtures/ground_truth.json (run make_fixtures.py first).
 
 Usage: uv run --directory servers/analysis/beat_sync python ../../../evals/eval_beat_sync.py
 """
+
 from __future__ import annotations
 
 import json
@@ -21,15 +22,49 @@ FPS = 25
 
 
 def solid(path: Path, color: str) -> None:
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i",
-                    f"color=c={color}:size=320x180:rate={FPS}", "-t", "30",
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p", str(path)], check=True, timeout=120)
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            f"color=c={color}:size=320x180:rate={FPS}",
+            "-t",
+            "30",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(path),
+        ],
+        check=True,
+        timeout=120,
+    )
 
 
 def cut_times(video: Path) -> list[float]:
-    raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", str(video), "-vf", "scale=1:1",
-                          "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
-                         capture_output=True, check=True, timeout=300).stdout
+    raw = subprocess.run(
+        [
+            "ffmpeg",
+            "-loglevel",
+            "error",
+            "-i",
+            str(video),
+            "-vf",
+            "scale=1:1",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgb24",
+            "-",
+        ],
+        capture_output=True,
+        check=True,
+        timeout=300,
+    ).stdout
     red = [raw[i] > raw[i + 2] for i in range(0, len(raw), 3)]
     return [i / FPS for i in range(1, len(red)) if red[i] != red[i - 1]]
 
@@ -53,6 +88,8 @@ def main() -> None:
         print(f"| {r[0]} | {r[1]} | {r[2]} | {r[3]:.1f} | {r[4]:.1f} |")
     tot, off = sum(r[1] for r in rows), sum(r[2] for r in rows)
     print(f"\ntotal: {off}/{tot} cuts more than one frame ({1000 / FPS:.0f} ms) off", file=sys.stderr)
+    if off:
+        sys.exit(1)  # CI gate: every cut must land within one frame of a beat
 
 
 if __name__ == "__main__":

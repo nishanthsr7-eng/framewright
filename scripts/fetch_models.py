@@ -7,6 +7,7 @@ Usage:
 
 Stdlib only, so it runs before any `uv sync`.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,6 +26,11 @@ MODELS = ROOT / "models"
 
 _ESRGAN_BASE = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-"
 _ESRGAN_OS = {"Windows": "windows", "Linux": "ubuntu", "Darwin": "macos"}
+_ESRGAN_SHA256 = {
+    "Windows": "abc02804e17982a3be33675e4d471e91ea374e65b70167abc09e31acb412802d",
+    "Linux": "e5aa6eb131234b87c0c51f82b89390f5e3e642b7b70f2b9bbe95b6a285a40c96",
+    "Darwin": "e0ad05580abfeb25f8d8fb55aaf7bedf552c375b5b4d9bd3c8d59764d2cc333a",
+}
 
 MODELS_SPEC = {
     "isnet": {
@@ -49,8 +55,7 @@ MODELS_SPEC = {
         "desc": "Real-ESRGAN ncnn-vulkan upscaler (binary + models)",
         "url": _ESRGAN_BASE + _ESRGAN_OS.get(platform.system(), "ubuntu") + ".zip",
         "dest": MODELS / "realesrgan",
-        # Pinned for the Windows zip only; Linux/macOS zips are not pinned yet.
-        "sha256": "abc02804e17982a3be33675e4d471e91ea374e65b70167abc09e31acb412802d" if platform.system() == "Windows" else None,
+        "sha256": _ESRGAN_SHA256.get(platform.system(), _ESRGAN_SHA256["Linux"]),
         "unzip": True,
     },
 }

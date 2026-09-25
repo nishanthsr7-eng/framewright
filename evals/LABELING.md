@@ -9,7 +9,7 @@
      shadows and motion-blur trails do not.
    - frame with no clear subject: delete the image instead of labeling it.
 3. Run the eval:
-   `uv run --directory servers/assets/subject_extractor python ../../../evals/eval_segmentation.py --real`
+   `python scripts/run_evals.py segmentation -- --real`
 
 ## GIMP (about 2–4 min per frame)
 1. Open the frame. Select the subject with **Foreground Select** (or Paths for hard edges),
@@ -23,3 +23,11 @@
    Any non-black colour counts as subject.
 
 Frames come from `samples/` and stay local (`evals/labels/` is gitignored).
+
+## Real-speech transcripts (WER)
+
+1. Put license-free clips with clear speech (30–120 s each) in `evals/labels/speech/`
+   (`.wav`, `.mp3`, `.mp4`, `.m4a`, `.flac`).
+2. Next to each, write `<same name>.txt` with exactly what is said, typed by a person
+   (not by Whisper). Punctuation and case don't matter; skip filler like "um".
+3. Run: `python scripts/run_evals.py audio -- --real`

@@ -8,6 +8,7 @@ so the numbers compare models; they are not a claim about real footage.
 Usage: uv run --directory servers/assets/subject_extractor python ../../../evals/eval_segmentation.py [--hq]
   --hq  also score general_hq (BiRefNet, slow; needs `fetch_models.py birefnet`)
 """
+
 from __future__ import annotations
 
 import random
@@ -33,10 +34,12 @@ def _figure_parts(rng: random.Random):
     limbs = []
     for side in (-1, 1):
         a = rng.uniform(-0.6, 0.6)
-        limbs.append(((cx + side * 55 * s, cy - 90 * s),
-                      (cx + side * (95 + 40 * a) * s, cy + (10 + 50 * a) * s), 26 * s))
-        limbs.append(((cx + side * 30 * s, cy + 50 * s),
-                      (cx + side * (40 + 25 * rng.random()) * s, cy + 210 * s), 34 * s))
+        limbs.append(
+            ((cx + side * 55 * s, cy - 90 * s), (cx + side * (95 + 40 * a) * s, cy + (10 + 50 * a) * s), 26 * s)
+        )
+        limbs.append(
+            ((cx + side * 30 * s, cy + 50 * s), (cx + side * (40 + 25 * rng.random()) * s, cy + 210 * s), 34 * s)
+        )
     return head, torso, limbs, s
 
 
@@ -111,8 +114,7 @@ def main() -> None:
         sets = load_real()
         _score(sets, styles)
         return
-    sets = {"anime": [make_frame(i, True) for i in range(N)],
-            "live-action": [make_frame(i, False) for i in range(N)]}
+    sets = {"anime": [make_frame(i, True) for i in range(N)], "live-action": [make_frame(i, False) for i in range(N)]}
     for name, frames in sets.items():
         for i, (img, gt) in enumerate(frames[:3]):  # a few samples to eyeball
             Image.fromarray(img).save(OUT / f"{name}_{i:02d}.png")
@@ -128,8 +130,7 @@ def load_real():
         for m in sorted((set_dir / "masks").glob("*.png")):
             img = set_dir / "images" / m.name
             if img.exists():
-                pairs.append((np.asarray(Image.open(img).convert("RGB")),
-                              np.asarray(Image.open(m).convert("L")) > 127))
+                pairs.append((np.asarray(Image.open(img).convert("RGB")), np.asarray(Image.open(m).convert("L")) > 127))
         if pairs:
             sets[set_dir.name] = pairs
     if not sets:

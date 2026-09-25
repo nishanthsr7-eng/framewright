@@ -10,14 +10,10 @@ foreach ($cmd in "uv", "ffmpeg", "ffprobe") {
     }
 }
 
-$failed = @()
-foreach ($proj in Get-ChildItem "$Root\servers\*\*\pyproject.toml") {
-    $dir = $proj.Directory.FullName
-    Write-Host "[sync] $($proj.Directory.Parent.Name)/$($proj.Directory.Name)"
-    uv sync --quiet --directory $dir
-    if ($LASTEXITCODE -ne 0) { $failed += $proj.Directory.Name }
-}
-if ($failed) { Write-Error "uv sync failed for: $($failed -join ', ')" }
+# One workspace, one lockfile: install every server into the root .venv.
+Write-Host "[sync] all servers"
+uv sync --quiet --all-packages --directory $Root
+if ($LASTEXITCODE -ne 0) { Write-Error "uv sync failed (see above)." }
 
 if (-not $SkipModels) {
     uv run --no-project python "$Root\scripts\fetch_models.py"

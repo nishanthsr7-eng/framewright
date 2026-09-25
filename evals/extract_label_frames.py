@@ -4,6 +4,7 @@ Put clips in samples/anime/ and samples/live-action/ (both gitignored).
 Writes evals/labels/<set>/images/<name>.png (gitignored).
 Usage: python evals/extract_label_frames.py [--per-set 20]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -19,8 +20,13 @@ VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".webm"}
 
 
 def duration(path: Path) -> float:
-    out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
-                          str(path)], capture_output=True, text=True, check=True, timeout=30)
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+    )
     return float(out.stdout.strip())
 
 
@@ -41,8 +47,23 @@ def main() -> None:
             for k in range(count):
                 t = d * (0.05 + 0.9 * (k + 0.5) / count)  # skip intro/outro
                 dst = out_dir / f"{path.stem}_{t:07.2f}s.png"
-                subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{t:.3f}", "-i", str(path),
-                                "-frames:v", "1", str(dst)], check=True, timeout=60)
+                subprocess.run(
+                    [
+                        "ffmpeg",
+                        "-y",
+                        "-loglevel",
+                        "error",
+                        "-ss",
+                        f"{t:.3f}",
+                        "-i",
+                        str(path),
+                        "-frames:v",
+                        "1",
+                        str(dst),
+                    ],
+                    check=True,
+                    timeout=60,
+                )
         print(f"{name}: {len(list(out_dir.glob('*.png')))} frames in {out_dir}", file=sys.stderr)
 
 

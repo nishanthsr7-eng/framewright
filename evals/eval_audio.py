@@ -1,9 +1,12 @@
 """Audio evals: beat F-measure (mir_eval, 70 ms window) and transcription WER (jiwer).
 
 Uses the click tracks and speech.wav from evals/fixtures (run make_fixtures.py first).
+--real also scores real recordings: evals/labels/speech/<name>.<wav|mp3|mp4|m4a> with a
+human transcript in <name>.txt next to it (see evals/LABELING.md).
 Usage: uv run --directory servers/analysis/audio_analyzer --with mir_eval --with jiwer \
-         python ../../../evals/eval_audio.py [--model base]
+         python ../../../evals/eval_audio.py [--model base] [--real]
 """
+
 from __future__ import annotations
 
 import json
@@ -18,6 +21,8 @@ import numpy as np
 from audio_analyzer_mcp.analyzer import detect_beats, transcribe_audio
 
 FIX = Path(__file__).resolve().parent / "fixtures"
+REAL = Path(__file__).resolve().parent / "labels" / "speech"
+AUDIO_EXTS = {".wav", ".mp3", ".mp4", ".m4a", ".flac"}
 
 
 def _norm(text: str) -> str:
