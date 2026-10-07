@@ -13,7 +13,7 @@ Editing has two halves: **understanding the media** (where are the beats, the cu
                         edit plan JSON (docs/edit-plan.md)
                                    │
                                    ▼
-                any LLM + prompts/resolve-script.md
+                hosted LLM + prompts/resolve-script.md
                                    │
                                    ▼
              Resolve Python script (uses resolve/bridge helpers)
@@ -55,7 +55,7 @@ servers/<group>/<name>/
 ```
 
 - stdout is the MCP channel; logs go to stderr.
-- ffmpeg runs as a subprocess with an argument list and a timeout.
+- ffmpeg and ffprobe run as subprocesses with an argument list and a timeout (shared helpers in `servers/core`).
 - Bad input raises a `ToolError` with a fix hint.
 - Each server finds the repo root by walking up to `servers/`, then uses `output/` and `models/`.
 
@@ -87,3 +87,13 @@ compose_layers(bg.mp4, [cutout, overlay])      → composite.mp4
 apply_lut(composite.mp4, "cinematic_teal_orange")
 export_for_platform(graded.mp4, "tiktok")
 ```
+
+## Design decisions
+
+Why it is built this way: [decisions/](decisions/README.md).
+
+- [Lua script instead of live control](decisions/0001-lua-script-not-live-control.md)
+- [One process per server](decisions/0002-one-process-per-server.md)
+- [File handoff via `output/`](decisions/0003-file-handoff-via-output.md)
+- [Lossless qp-0 intermediates](decisions/0004-lossless-intermediates.md)
+- Case study: [beat-sync accuracy](case-study-beat-sync.md)
