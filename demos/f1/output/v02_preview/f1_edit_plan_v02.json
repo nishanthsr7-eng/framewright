@@ -1,0 +1,407 @@
+{
+  "version": "0.1",
+  "project": {
+    "name": "F1 Demo v2",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30.0
+  },
+  "music": {
+    "file": "demos/f1/output/shared/f1_audio.wav",
+    "start": 0.0,
+    "gain_db": 0
+  },
+  "beat_grid": {
+    "bpm": 184.57,
+    "beats": [
+      0.093,
+      0.395,
+      0.72,
+      1.045,
+      1.37,
+      1.695,
+      1.997,
+      2.322,
+      2.647,
+      2.972,
+      3.274,
+      3.599,
+      3.924,
+      4.249,
+      4.574,
+      4.899,
+      5.224,
+      5.526,
+      5.828,
+      6.13,
+      6.455,
+      6.78,
+      7.105,
+      7.43,
+      7.755,
+      8.081,
+      8.382,
+      8.707,
+      9.033,
+      9.358,
+      9.66,
+      9.961,
+      10.286,
+      10.635,
+      10.96,
+      11.262,
+      11.587,
+      11.912,
+      12.214,
+      12.539,
+      12.864,
+      13.189
+    ],
+    "downbeats": [
+      1.045,
+      2.322,
+      3.599,
+      4.899,
+      6.13,
+      7.43,
+      8.707,
+      9.961,
+      11.262,
+      12.539
+    ],
+    "sections": [
+      {
+        "label": "intro",
+        "start": 0.0,
+        "end": 6.409
+      },
+      {
+        "label": "outro",
+        "start": 6.409,
+        "end": 14.095918367346938
+      }
+    ]
+  },
+  "clips": [
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 12.2,
+      "out": 12.92,
+      "track": 1,
+      "at": 0.0,
+      "speed": 1.0,
+      "section": "intro"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 112.0,
+      "out": 112.65,
+      "track": 1,
+      "at": 0.72,
+      "speed": 1.0,
+      "section": "intro"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 100.5,
+      "out": 101.127,
+      "track": 1,
+      "at": 1.37,
+      "speed": 1.0,
+      "section": "intro"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 82.0,
+      "out": 82.65,
+      "track": 1,
+      "at": 1.997,
+      "speed": 1.0,
+      "section": "intro"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 88.0,
+      "out": 88.627,
+      "track": 1,
+      "at": 2.647,
+      "speed": 1.0,
+      "section": "intro"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 56.2,
+      "out": 56.85,
+      "track": 1,
+      "at": 3.274,
+      "speed": 1.0,
+      "section": "intro"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_2.mp4",
+      "in": 324.2,
+      "out": 324.85,
+      "track": 1,
+      "at": 3.924,
+      "speed": 1.0,
+      "section": "intro"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 128.2,
+      "out": 128.85,
+      "track": 1,
+      "at": 4.574,
+      "speed": 1.0,
+      "section": "intro"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 38.2,
+      "out": 38.804,
+      "track": 1,
+      "at": 5.224,
+      "speed": 1.0,
+      "section": "intro"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_2.mp4",
+      "in": 330.2,
+      "out": 330.502,
+      "track": 1,
+      "at": 5.828,
+      "speed": 1.0,
+      "section": "build",
+      "effects": [
+        "Chromatic Aberration"
+      ]
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 148.2,
+      "out": 148.525,
+      "track": 1,
+      "at": 6.13,
+      "speed": 1.0,
+      "section": "build",
+      "effects": [
+        "Chromatic Aberration"
+      ]
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 120.3,
+      "out": 120.625,
+      "track": 1,
+      "at": 6.455,
+      "speed": 1.0,
+      "section": "drop",
+      "transition_in": {
+        "type": "Flash White",
+        "frames": 4
+      },
+      "effects": [
+        "Screen Shake"
+      ]
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_2.mp4",
+      "in": 0.5,
+      "out": 0.825,
+      "track": 1,
+      "at": 6.78,
+      "speed": 1.0,
+      "section": "drop"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_2.mp4",
+      "in": 278.2,
+      "out": 278.525,
+      "track": 1,
+      "at": 7.105,
+      "speed": 1.0,
+      "section": "drop"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 136.2,
+      "out": 136.838,
+      "track": 1,
+      "at": 7.43,
+      "speed": 0.5,
+      "section": "drop",
+      "transition_in": {
+        "type": "Flash White",
+        "frames": 4
+      },
+      "effects": [
+        "Screen Shake"
+      ]
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 30.2,
+      "out": 30.526,
+      "track": 1,
+      "at": 8.707,
+      "speed": 1.0,
+      "section": "drop",
+      "transition_in": {
+        "type": "Flash White",
+        "frames": 4
+      },
+      "effects": [
+        "Screen Shake"
+      ]
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_2.mp4",
+      "in": 36.2,
+      "out": 36.525,
+      "track": 1,
+      "at": 9.033,
+      "speed": 1.0,
+      "section": "drop"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 72.2,
+      "out": 72.502,
+      "track": 1,
+      "at": 9.358,
+      "speed": 1.0,
+      "section": "drop"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_2.mp4",
+      "in": 260.2,
+      "out": 260.501,
+      "track": 1,
+      "at": 9.66,
+      "speed": 1.0,
+      "section": "drop"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_2.mp4",
+      "in": 298.2,
+      "out": 298.525,
+      "track": 1,
+      "at": 9.961,
+      "speed": 1.0,
+      "section": "drop",
+      "transition_in": {
+        "type": "Flash White",
+        "frames": 4
+      },
+      "effects": [
+        "Screen Shake"
+      ]
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 110.2,
+      "out": 110.549,
+      "track": 1,
+      "at": 10.286,
+      "speed": 1.0,
+      "section": "drop"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_2.mp4",
+      "in": 332.2,
+      "out": 332.525,
+      "track": 1,
+      "at": 10.635,
+      "speed": 1.0,
+      "section": "drop"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 76.2,
+      "out": 76.502,
+      "track": 1,
+      "at": 10.96,
+      "speed": 1.0,
+      "section": "drop"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 68.2,
+      "out": 68.676,
+      "track": 1,
+      "at": 11.262,
+      "speed": 0.5,
+      "section": "drop",
+      "transition_in": {
+        "type": "Flash White",
+        "frames": 4
+      },
+      "effects": [
+        "Screen Shake"
+      ]
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_2.mp4",
+      "in": 368.2,
+      "out": 368.525,
+      "track": 1,
+      "at": 12.214,
+      "speed": 1.0,
+      "section": "end"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_2.mp4",
+      "in": 408.2,
+      "out": 408.525,
+      "track": 1,
+      "at": 12.539,
+      "speed": 1.0,
+      "section": "end"
+    },
+    {
+      "file": "demos/f1/input/footage/f1_footage_1.mp4",
+      "in": 130.2,
+      "out": 131.105,
+      "track": 1,
+      "at": 12.864,
+      "speed": 0.75,
+      "section": "end",
+      "transition_in": {
+        "type": "Flash White",
+        "frames": 4
+      }
+    }
+  ],
+  "titles": [
+    {
+      "text": "MAX VERSTAPPEN",
+      "at": 13.189,
+      "duration": 0.88,
+      "track": 2,
+      "template": "Center Title"
+    }
+  ],
+  "markers": [
+    {
+      "at": 0.0,
+      "color": "Blue",
+      "name": "intro"
+    },
+    {
+      "at": 5.828,
+      "color": "Yellow",
+      "name": "build"
+    },
+    {
+      "at": 6.455,
+      "color": "Red",
+      "name": "drop"
+    },
+    {
+      "at": 12.214,
+      "color": "Purple",
+      "name": "end"
+    }
+  ],
+  "notes": "Hand-picked shots. Intro 2 beats/cut, build 1 beat, drop 1 beat with slow-mo hero holds; Flash White + Screen Shake on drop downbeats. Chromatic Aberration on the build (Resolve only)."
+}

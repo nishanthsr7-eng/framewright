@@ -1,0 +1,217 @@
+{
+ "version": "0.1",
+ "project": {
+  "name": "F1 Demo",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30.0
+ },
+ "music": {
+  "file": "demos/f1/output/shared/f1_audio.wav",
+  "start": 0.0,
+  "gain_db": 0
+ },
+ "beat_grid": {
+  "bpm": 184.57,
+  "beats": [
+   0.093,
+   0.395,
+   0.72,
+   1.045,
+   1.37,
+   1.695,
+   1.997,
+   2.322,
+   2.647,
+   2.972,
+   3.274,
+   3.599,
+   3.924,
+   4.249,
+   4.574,
+   4.899,
+   5.224,
+   5.526,
+   5.828,
+   6.13,
+   6.455,
+   6.78,
+   7.105,
+   7.43,
+   7.755,
+   8.081,
+   8.382,
+   8.707,
+   9.033,
+   9.358,
+   9.66,
+   9.961,
+   10.286,
+   10.635,
+   10.96,
+   11.262,
+   11.587,
+   11.912,
+   12.214,
+   12.539,
+   12.864,
+   13.189
+  ],
+  "downbeats": [
+   1.045,
+   2.322,
+   3.599,
+   4.899,
+   6.13,
+   7.43,
+   8.707,
+   9.961,
+   11.262,
+   12.539
+  ],
+  "sections": [
+   {
+    "label": "intro",
+    "start": 0.0,
+    "end": 6.409
+   },
+   {
+    "label": "outro",
+    "start": 6.409,
+    "end": 14.095918367346938
+   }
+  ]
+ },
+ "clips": [
+  {
+   "file": "demos/f1/input/footage/f1_footage_2.mp4",
+   "in": 67.45,
+   "out": 67.543,
+   "track": 1,
+   "at": 0.0,
+   "speed": 1.0,
+   "section": "intro"
+  },
+  {
+   "file": "demos/f1/input/footage/f1_footage_1.mp4",
+   "in": 11.95,
+   "out": 13.227,
+   "track": 1,
+   "at": 0.093,
+   "speed": 1.0,
+   "section": "intro"
+  },
+  {
+   "file": "demos/f1/input/footage/f1_footage_1.mp4",
+   "in": 94.45,
+   "out": 95.727,
+   "track": 1,
+   "at": 1.37,
+   "speed": 1.0,
+   "section": "intro"
+  },
+  {
+   "file": "demos/f1/input/footage/f1_footage_1.mp4",
+   "in": 18.867,
+   "out": 20.144,
+   "track": 1,
+   "at": 2.647,
+   "speed": 1.0,
+   "section": "intro"
+  },
+  {
+   "file": "demos/f1/input/footage/f1_footage_1.mp4",
+   "in": 24.117,
+   "out": 25.417,
+   "track": 1,
+   "at": 3.924,
+   "speed": 1.0,
+   "section": "intro"
+  },
+  {
+   "file": "demos/f1/input/footage/f1_footage_1.mp4",
+   "in": 0.367,
+   "out": 1.598,
+   "track": 1,
+   "at": 5.224,
+   "speed": 1.0,
+   "section": "intro"
+  },
+  {
+   "file": "demos/f1/input/footage/f1_footage_1.mp4",
+   "in": 29.95,
+   "out": 31.25,
+   "track": 1,
+   "at": 6.455,
+   "speed": 1.0,
+   "section": "outro"
+  },
+  {
+   "file": "demos/f1/input/footage/f1_footage_1.mp4",
+   "in": 82.283,
+   "out": 83.561,
+   "track": 1,
+   "at": 7.755,
+   "speed": 1.0,
+   "section": "outro"
+  },
+  {
+   "file": "demos/f1/input/footage/f1_footage_1.mp4",
+   "in": 72.533,
+   "out": 73.786,
+   "track": 1,
+   "at": 9.033,
+   "speed": 1.0,
+   "section": "outro"
+  },
+  {
+   "file": "demos/f1/input/footage/f1_footage_2.mp4",
+   "in": 272.45,
+   "out": 273.751,
+   "track": 1,
+   "at": 10.286,
+   "speed": 1.0,
+   "section": "outro"
+  },
+  {
+   "file": "demos/f1/input/footage/f1_footage_1.mp4",
+   "in": 120.45,
+   "out": 121.727,
+   "track": 1,
+   "at": 11.587,
+   "speed": 1.0,
+   "section": "outro"
+  },
+  {
+   "file": "demos/f1/input/footage/f1_footage_1.mp4",
+   "in": 144.117,
+   "out": 145.349,
+   "track": 1,
+   "at": 12.864,
+   "speed": 1.0,
+   "section": "outro"
+  }
+ ],
+ "titles": [
+  {
+   "text": "MAX VERSTAPPEN",
+   "at": 0.0,
+   "duration": 1.5,
+   "track": 2,
+   "template": "Center Title"
+  }
+ ],
+ "markers": [
+  {
+   "at": 0.0,
+   "color": "Blue",
+   "name": "intro"
+  },
+  {
+   "at": 6.409,
+   "color": "Blue",
+   "name": "outro"
+  }
+ ],
+ "notes": "auto_amv_plan: style=general, pace=hype. Flash White + Screen Shake mark drop/chorus downbeats."
+}
