@@ -1,4 +1,5 @@
 """Tests for framewright_bridge with a fake Resolve API. Run: python -m unittest resolve/bridge/test_framewright_bridge.py"""
+
 import os
 import sys
 import tempfile
@@ -15,29 +16,55 @@ class Item:
     def __init__(self, path, fps=24.0, frames=2400):
         self.path, self.props = path, {"File Path": path, "FPS": str(fps), "Frames": str(frames)}
 
-    def GetName(self): return os.path.basename(self.path)
-    def GetClipProperty(self, key): return self.props.get(key)
+    def GetName(self):
+        return os.path.basename(self.path)
+
+    def GetClipProperty(self, key):
+        return self.props.get(key)
 
 
 class Folder:
-    def __init__(self, name): self.name, self.clips, self.subs = name, [], []
-    def GetName(self): return self.name
-    def GetClipList(self): return self.clips
-    def GetSubFolderList(self): return self.subs
+    def __init__(self, name):
+        self.name, self.clips, self.subs = name, [], []
+
+    def GetName(self):
+        return self.name
+
+    def GetClipList(self):
+        return self.clips
+
+    def GetSubFolderList(self):
+        return self.subs
 
 
 class TimelineItem:
-    def SetProperty(self, key, value): return False  # retime not scriptable, like many versions
+    def SetProperty(self, key, value):
+        return False  # retime not scriptable, like many versions
 
 
 class Timeline:
-    def __init__(self, name): self.name, self.placed, self.markers, self.tracks = name, [], {}, 1
-    def GetName(self): return self.name
-    def GetStartFrame(self): return 86400
-    def GetTrackCount(self, kind): return self.tracks
-    def AddTrack(self, kind): self.tracks += 1; return True
-    def SetCurrentTimecode(self, tc): self.tc = tc; return True
-    def InsertFusionTitleIntoTimeline(self, name): return None
+    def __init__(self, name):
+        self.name, self.placed, self.markers, self.tracks = name, [], {}, 1
+
+    def GetName(self):
+        return self.name
+
+    def GetStartFrame(self):
+        return 86400
+
+    def GetTrackCount(self, kind):
+        return self.tracks
+
+    def AddTrack(self, kind):
+        self.tracks += 1
+        return True
+
+    def SetCurrentTimecode(self, tc):
+        self.tc = tc
+        return True
+
+    def InsertFusionTitleIntoTimeline(self, name):
+        return None
 
     def AddMarker(self, frame, color, name, note, duration):
         if frame in self.markers:
@@ -47,12 +74,20 @@ class Timeline:
 
 
 class MediaPool:
-    def __init__(self, project): self.root, self.current, self.project = Folder("Master"), None, project
-    def GetRootFolder(self): return self.root
-    def SetCurrentFolder(self, f): self.current = f; return True
+    def __init__(self, project):
+        self.root, self.current, self.project = Folder("Master"), None, project
+
+    def GetRootFolder(self):
+        return self.root
+
+    def SetCurrentFolder(self, f):
+        self.current = f
+        return True
 
     def AddSubFolder(self, parent, name):
-        f = Folder(name); parent.subs.append(f); return f
+        f = Folder(name)
+        parent.subs.append(f)
+        return f
 
     def ImportMedia(self, paths):
         items = [Item(p) for p in paths]
@@ -60,7 +95,9 @@ class MediaPool:
         return items
 
     def CreateEmptyTimeline(self, name):
-        t = Timeline(name); self.project.timelines.append(t); return t
+        t = Timeline(name)
+        self.project.timelines.append(t)
+        return t
 
     def AppendToTimeline(self, infos):
         self.project.current.placed.extend(infos)
@@ -72,21 +109,38 @@ class Project:
         self.settings, self.timelines, self.current = {}, [], None
         self.mp = MediaPool(self)
 
-    def SetSetting(self, k, v): self.settings[k] = v; return True
-    def GetMediaPool(self): return self.mp
-    def GetTimelineCount(self): return len(self.timelines)
-    def GetTimelineByIndex(self, i): return self.timelines[i - 1]
-    def SetCurrentTimeline(self, t): self.current = t; return True
+    def SetSetting(self, k, v):
+        self.settings[k] = v
+        return True
+
+    def GetMediaPool(self):
+        return self.mp
+
+    def GetTimelineCount(self):
+        return len(self.timelines)
+
+    def GetTimelineByIndex(self, i):
+        return self.timelines[i - 1]
+
+    def SetCurrentTimeline(self, t):
+        self.current = t
+        return True
 
 
 class PM:
-    def __init__(self): self.project = Project()
-    def GetCurrentProject(self): return self.project
+    def __init__(self):
+        self.project = Project()
+
+    def GetCurrentProject(self):
+        return self.project
 
 
 class Resolve:
-    def __init__(self): self.pm = PM()
-    def GetProjectManager(self): return self.pm
+    def __init__(self):
+        self.pm = PM()
+
+    def GetProjectManager(self):
+        return self.pm
 
 
 class BridgeTest(unittest.TestCase):
@@ -94,9 +148,12 @@ class BridgeTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.plan = fw.load_plan(ROOT / "examples" / "edit_plan.example.json")
         for f in {c["file"] for c in self.plan["clips"]} | {self.plan["music"]["file"]}:
-            p = Path(self.tmp.name, f); p.parent.mkdir(parents=True, exist_ok=True); p.write_bytes(b"")
+            p = Path(self.tmp.name, f)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_bytes(b"")
 
-    def tearDown(self): self.tmp.cleanup()
+    def tearDown(self):
+        self.tmp.cleanup()
 
     def test_build_from_plan(self):
         r = Resolve()

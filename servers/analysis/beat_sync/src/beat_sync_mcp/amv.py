@@ -1,4 +1,5 @@
 """Auto AMV: analyze music + clips, pick shots by motion, and write a beat-cut edit plan (docs/edit-plan.md)."""
+
 import json
 import logging
 import os
@@ -7,8 +8,8 @@ import subprocess
 
 import librosa
 import numpy as np
+from framewright_core import output_root as _get_output_root
 
-from beat_sync_mcp.beat_sync import _get_output_root
 from beat_sync_mcp.plan import PLAN_VERSION, _media_info, _repo_root, write_plan_lua
 
 # Beats per cut in each section label; None = no cuts inside the section (the previous shot holds).
@@ -49,8 +50,11 @@ def _analyze_music(path, beats_per_bar=4):
         bounds = np.linspace(0, n, n_sec, endpoint=False, dtype=int)
     bounds = sorted(set(int(b) for b in bounds) | {0, n})
     times = librosa.frames_to_time(bounds, sr=sr, hop_length=hop)
-    raw = [(float(times[i]), float(times[i + 1]), float(rms[bounds[i]:bounds[i + 1]].mean()))
-           for i in range(len(bounds) - 1) if bounds[i + 1] > bounds[i]]
+    raw = [
+        (float(times[i]), float(times[i + 1]), float(rms[bounds[i] : bounds[i + 1]].mean()))
+        for i in range(len(bounds) - 1)
+        if bounds[i + 1] > bounds[i]
+    ]
     energies = np.array([r[2] for r in raw])
     drop = int(np.argmax(energies))
     sections = []
@@ -66,17 +70,44 @@ def _analyze_music(path, beats_per_bar=4):
         else:
             label = "verse"
         sections.append({"label": label, "start": round(a, 3), "end": round(b, 3)})
-    return {"tempo": round(tempo, 2), "duration": total, "beats": [round(float(t), 3) for t in beats],
-            "downbeats": [round(float(t), 3) for t in downbeats], "sections": sections}
+    return {
+        "tempo": round(tempo, 2),
+        "duration": total,
+        "beats": [round(float(t), 3) for t in beats],
+        "downbeats": [round(float(t), 3) for t in downbeats],
+        "sections": sections,
+    }
 
 
 def _analyze_clip(path, scene_threshold):
     """One ffmpeg pass: scene-cut times (scene filter) + per-frame motion and brightness at 12 fps."""
-    graph = (f"[0:v]fps={MFPS},scale={MW}:{MH},format=gray,split[m][s];"
-             f"[s]select='gt(scene,{scene_threshold})',showinfo[o]")
-    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", path, "-filter_complex", graph,
-                        "-map", "[m]", "-f", "rawvideo", "-", "-map", "[o]", "-f", "null", os.devnull],
-                       capture_output=True, timeout=1800)
+    graph = (
+        f"[0:v]fps={MFPS},scale={MW}:{MH},format=gray,split[m][s];[s]select='gt(scene,{scene_threshold})',showinfo[o]"
+    )
+    r = subprocess.run(
+        [
+            "ffmpeg",
+            "-hide_banner",
+            "-nostats",
+            "-i",
+            path,
+            "-filter_complex",
+            graph,
+            "-map",
+            "[m]",
+            "-f",
+            "rawvideo",
+            "-",
+            "-map",
+            "[o]",
+            "-f",
+            "null",
+            os.devnull,
+        ],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        timeout=1800,
+    )
     if r.returncode != 0:
         raise RuntimeError(f"ffmpeg could not analyze {path}: {r.stderr.decode(errors='replace')[-500:]}")
     fr = np.frombuffer(r.stdout, np.uint8)
@@ -98,12 +129,21 @@ def _rel(path):
     return full.replace("\\", "/") if rel.startswith("..") else rel.replace("\\", "/")
 
 
-def auto_amv_plan(clip_paths, music_path, output_path=None, end_time=None, style="anime", pace="hype",
-                  fps=24.0, title=None, project_name=None):
+def auto_amv_plan(
+    clip_paths: list[str],
+    music_path: str,
+    output_path: str | None = None,
+    end_time: float | None = None,
+    style: str = "anime",
+    pace: str = "hype",
+    fps: float = 24.0,
+    title: str | None = None,
+    project_name: str | None = None,
+) -> dict:
     _media_info(music_path)
     infos = [_media_info(p) for p in clip_paths]
     if any(i["fps"] is None for i in infos):
-        bad = [p for p, i in zip(clip_paths, infos) if i["fps"] is None]
+        bad = [p for p, i in zip(clip_paths, infos, strict=True) if i["fps"] is None]
         raise ValueError(f"No video stream in {bad}; pass video files as clip_paths")
     cfg = STYLE[style]
     audio = _analyze_music(music_path)
@@ -118,12 +158,19 @@ def auto_amv_plan(clip_paths, music_path, output_path=None, end_time=None, style
         cuts, motion, bright = _analyze_clip(path, cfg["scene"])
         motion_by_clip.append(motion)
         edges = [0.0] + [c for c in cuts if 0 < c < infos[k]["duration"]] + [infos[k]["duration"]]
-        for a, b in zip(edges, edges[1:]):
+        for a, b in zip(edges, edges[1:], strict=False):
             fa, fb = int(a * MFPS), int(b * MFPS)
             if b - a < cfg["min_shot"] or fb - fa < 3 or bright[fa:fb].mean() < 25:  # too short or too dark
                 continue
-            shots.append({"clip": k, "start": a, "end": b, "motion": float(np.percentile(motion[fa + 1:fb], 75)),
-                          "used": False})
+            shots.append(
+                {
+                    "clip": k,
+                    "start": a,
+                    "end": b,
+                    "motion": float(np.percentile(motion[fa + 1 : fb], 75)),
+                    "used": False,
+                }
+            )
     if not shots:
         raise RuntimeError("No usable shots (all too short or too dark); try style='anime' or brighter clips")
     rank = np.argsort([-s["motion"] for s in shots])
@@ -141,7 +188,7 @@ def auto_amv_plan(clip_paths, music_path, output_path=None, end_time=None, style
         return next((s["label"] for s in sections if s["start"] <= t < s["end"]), "verse")
 
     def pick(energy, length):
-        order = {"hi": rank, "mid": rank[len(rank) // 5:], "calm": rank[::-1]}[energy]
+        order = {"hi": rank, "mid": rank[len(rank) // 5 :], "calm": rank[::-1]}[energy]
         for need_len in (True, False):  # second pass allows shorter shots (slowed down)
             for i in order:
                 s = shots[i]
@@ -153,7 +200,7 @@ def auto_amv_plan(clip_paths, music_path, output_path=None, end_time=None, style
         return pick(energy, length)
 
     clips = []
-    for at, nxt in zip(grid, grid[1:]):
+    for at, nxt in zip(grid, grid[1:], strict=False):
         length = nxt - at
         label = section_at(at)
         s = pick({"drop": "hi", "chorus": "hi", "intro": "calm", "outro": "calm"}.get(label, "mid"), length)
@@ -167,8 +214,15 @@ def auto_amv_plan(clip_paths, music_path, output_path=None, end_time=None, style
         if b - a > win:  # slide to the most active window
             start += int(np.argmax(np.convolve(prof[a:b], np.ones(win), "valid"))) / MFPS
         start = max(s["start"], min(start, s["end"] - use - 1 / fps)) + 1 / fps  # skip the cut frame
-        c = {"file": _rel(clip_paths[s["clip"]]), "in": round(start, 3), "out": round(start + use, 3), "track": 1,
-             "at": round(at, 3), "speed": speed, "section": label}
+        c = {
+            "file": _rel(clip_paths[s["clip"]]),
+            "in": round(start, 3),
+            "out": round(start + use, 3),
+            "track": 1,
+            "at": round(at, 3),
+            "speed": speed,
+            "section": label,
+        }
         if label in HIGH_ENERGY and any(abs(at - d) < 0.05 for d in down):
             c["transition_in"] = {"type": "Flash White", "frames": 3}
             c["effects"] = ["Screen Shake"]
@@ -187,8 +241,10 @@ def auto_amv_plan(clip_paths, music_path, output_path=None, end_time=None, style
         "beat_grid": {"bpm": audio["tempo"], "beats": beats, "downbeats": down, "sections": sections},
         "clips": clips,
         "titles": titles,
-        "markers": [{"at": s["start"], "color": "Red" if s["label"] in HIGH_ENERGY else "Blue", "name": s["label"]}
-                    for s in sections],
+        "markers": [
+            {"at": s["start"], "color": "Red" if s["label"] in HIGH_ENERGY else "Blue", "name": s["label"]}
+            for s in sections
+        ],
         "notes": f"auto_amv_plan: style={style}, pace={pace}. Flash White + Screen Shake mark drop/chorus downbeats.",
     }
     if output_path is None:
@@ -198,7 +254,14 @@ def auto_amv_plan(clip_paths, music_path, output_path=None, end_time=None, style
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(plan, f, indent=1)
     lua_path = write_plan_lua(plan, output_path)
-    return {"output_path": output_path, "resolve_lua": lua_path, "clip_count": len(clips), "duration": round(end, 3),
-            "bpm": audio["tempo"], "flashes": sum("transition_in" in c for c in clips),
-            "slowed": sum(c["speed"] < 1 for c in clips), "shots_available": len(shots),
-            "sections": [f"{s['label']} {s['start']}-{s['end']}" for s in sections]}
+    return {
+        "output_path": output_path,
+        "resolve_lua": lua_path,
+        "clip_count": len(clips),
+        "duration": round(end, 3),
+        "bpm": audio["tempo"],
+        "flashes": sum("transition_in" in c for c in clips),
+        "slowed": sum(c["speed"] < 1 for c in clips),
+        "shots_available": len(shots),
+        "sections": [f"{s['label']} {s['start']}-{s['end']}" for s in sections],
+    }

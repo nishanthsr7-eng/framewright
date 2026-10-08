@@ -1,39 +1,13 @@
 import json
 import os
 import shutil
-import subprocess
 import tempfile
 
 from framewright_core import output_root as _get_output_root
+from framewright_core import probe_video
 from framewright_core import run_ffmpeg as _run_ffmpeg
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".tif", ".tiff"}
-
-
-def _probe(path):
-    cmd = [
-        "ffprobe", "-v", "error", "-print_format", "json",
-        "-show_format", "-show_streams", path,
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"ffprobe failed: {result.stderr[-1000:]}")
-    data = json.loads(result.stdout)
-    vstream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
-    has_audio = any(s["codec_type"] == "audio" for s in data["streams"])
-    width = int(vstream["width"]) if vstream else None
-    height = int(vstream["height"]) if vstream else None
-    duration = float(
-        data["format"].get("duration")
-        or (vstream.get("duration") if vstream else 0)
-        or 0.0
-    )
-    if vstream:
-        num, den = (vstream.get("r_frame_rate", "30/1").split("/") + ["1"])[:2]
-        fps = float(num) / float(den) if float(den) != 0 else 30.0
-    else:
-        fps = 30.0
-    return {"width": width, "height": height, "duration": duration, "fps": fps, "has_audio": has_audio}
 
 
 def _is_image(path):
@@ -53,7 +27,7 @@ def _save_project(project_path, project):
         json.dump(project, f, ensure_ascii=False, indent=2)
 
 
-def create_project(project_path, width=1920, height=1080, fps=30):
+def create_project(project_path: str, width: int = 1920, height: int = 1080, fps: int = 30) -> dict:
     """
     创建一个新的剪辑项目(JSON 文件)，包含空的片段列表和叠加层列表。
     """
@@ -62,7 +36,14 @@ def create_project(project_path, width=1920, height=1080, fps=30):
     return project
 
 
-def add_clip(project_path, file, start=0.0, end=None, transition_in=None, transition_in_duration=0.5):
+def add_clip(
+    project_path: str,
+    file: str,
+    start: float = 0.0,
+    end: float | None = None,
+    transition_in: str | None = None,
+    transition_in_duration: float = 0.5,
+) -> dict:
     """
     向项目的主时间轴末尾追加一个片段(视频或图片，按顺序播放)。
 
@@ -77,8 +58,8 @@ def add_clip(project_path, file, start=0.0, end=None, transition_in=None, transi
     project = _load_project(project_path)
 
     if end is None:
-        info = _probe(file)
-        end = info["duration"] if info["duration"] > 0 else (start + 5.0)
+        info = probe_video(file, require_video=False)
+        end = info.duration if info.duration > 0 else (start + 5.0)
 
     clip = {"file": file, "start": float(start), "end": float(end)}
     if transition_in:
@@ -90,7 +71,7 @@ def add_clip(project_path, file, start=0.0, end=None, transition_in=None, transi
     return {"index": len(project["clips"]) - 1, "clip": clip, "clip_count": len(project["clips"])}
 
 
-def remove_clip(project_path, index):
+def remove_clip(project_path: str, index: int) -> dict:
     """
     删除项目中第 index 个片段(从 0 开始计数)。
     """
@@ -102,8 +83,18 @@ def remove_clip(project_path, index):
     return {"removed": removed, "clip_count": len(project["clips"])}
 
 
-def add_overlay(project_path, file, x=0, y=0, width=None, height=None, opacity=1.0,
-                start_time=0.0, end_time=None, audio=False):
+def add_overlay(
+    project_path: str,
+    file: str,
+    x: int = 0,
+    y: int = 0,
+    width: int | None = None,
+    height: int | None = None,
+    opacity: float = 1.0,
+    start_time: float = 0.0,
+    end_time: float | None = None,
+    audio: bool = False,
+) -> dict:
     """
     向项目添加一个叠加层(图片或透明视频/webm)，叠加在最终渲染的合成画面上。
     时间区间 start_time/end_time 是相对于最终渲染出的整段视频的时间轴。
@@ -113,8 +104,12 @@ def add_overlay(project_path, file, x=0, y=0, width=None, height=None, opacity=1
 
     project = _load_project(project_path)
     overlay = {
-        "file": file, "x": x, "y": y, "opacity": float(opacity),
-        "start_time": float(start_time), "audio": bool(audio),
+        "file": file,
+        "x": x,
+        "y": y,
+        "opacity": float(opacity),
+        "start_time": float(start_time),
+        "audio": bool(audio),
     }
     if width is not None:
         overlay["width"] = width
@@ -128,7 +123,7 @@ def add_overlay(project_path, file, x=0, y=0, width=None, height=None, opacity=1
     return {"index": len(project["overlays"]) - 1, "overlay": overlay, "overlay_count": len(project["overlays"])}
 
 
-def remove_overlay(project_path, index):
+def remove_overlay(project_path: str, index: int) -> dict:
     """
     删除项目中第 index 个叠加层(从 0 开始计数)。
     """
@@ -140,7 +135,7 @@ def remove_overlay(project_path, index):
     return {"removed": removed, "overlay_count": len(project["overlays"])}
 
 
-def get_project(project_path):
+def get_project(project_path: str) -> dict:
     """
     返回项目的完整内容(片段、叠加层、画布尺寸/帧率)，以及根据片段时长和
     转场估算的总时长。
@@ -167,21 +162,45 @@ def _normalize_clip(clip, index, w, h, fps, tmp):
     )
 
     if _is_image(file_path):
-        args = ["-loop", "1", "-t", f"{dur}", "-i", file_path,
-                "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
+        args = [
+            "-loop",
+            "1",
+            "-t",
+            f"{dur}",
+            "-i",
+            file_path,
+            "-f",
+            "lavfi",
+            "-i",
+            "anullsrc=channel_layout=stereo:sample_rate=44100",
+        ]
         args += ["-t", f"{dur}", "-map", "0:v", "-map", "1:a"]
     else:
-        info = _probe(file_path)
+        info = probe_video(file_path, require_video=False)
         args = ["-ss", f"{start}", "-i", file_path]
-        if not info["has_audio"]:
+        if not info.has_audio:
             args += ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
             args += ["-t", f"{dur}", "-map", "0:v", "-map", "1:a"]
         else:
             args += ["-t", f"{dur}"]
 
-    args += ["-vf", vf, "-ar", "44100", "-ac", "2",
-             "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p",
-             "-c:a", "aac", seg_path]
+    args += [
+        "-vf",
+        vf,
+        "-ar",
+        "44100",
+        "-ac",
+        "2",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "fast",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:a",
+        "aac",
+        seg_path,
+    ]
     _run_ffmpeg(args)
     return seg_path
 
@@ -206,10 +225,27 @@ def _merge_clips(normalized, project_clips, tmp):
                 f"[v0][v1]xfade=transition={transition}:duration={t_dur}:offset={offset}[v]"
             )
             afilter = f"[0:a][1:a]acrossfade=d={t_dur}[a]"
-            args = ["-i", running, "-i", seg, "-filter_complex", vfilter + ";" + afilter,
-                    "-map", "[v]", "-map", "[a]",
-                    "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p",
-                    "-c:a", "aac", out_path]
+            args = [
+                "-i",
+                running,
+                "-i",
+                seg,
+                "-filter_complex",
+                vfilter + ";" + afilter,
+                "-map",
+                "[v]",
+                "-map",
+                "[a]",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "fast",
+                "-pix_fmt",
+                "yuv420p",
+                "-c:a",
+                "aac",
+                out_path,
+            ]
             _run_ffmpeg(args)
             running_dur = running_dur + clip_dur - t_dur
         else:
@@ -227,13 +263,13 @@ def _merge_clips(normalized, project_clips, tmp):
 
 
 def _apply_overlays(base_path, overlays, tmp):
-    base_info = _probe(base_path)
-    total = base_info["duration"]
+    base_info = probe_video(base_path, require_video=False)
+    total = base_info.duration
 
     input_args = ["-i", base_path]
     filter_parts = []
     last_label = "0:v"
-    audio_inputs = [(0, 0.0)] if base_info["has_audio"] else []
+    audio_inputs = [(0, 0.0)] if base_info.has_audio else []
 
     for j, layer in enumerate(overlays):
         idx = j + 1
@@ -280,8 +316,7 @@ def _apply_overlays(base_path, overlays, tmp):
         y = layer.get("y", 0)
         out_label = f"v{idx}"
         filter_parts.append(
-            f"[{last_label}][{layer_label}]overlay=x={x}:y={y}:"
-            f"enable='between(t,{start},{end})'[{out_label}]"
+            f"[{last_label}][{layer_label}]overlay=x={x}:y={y}:enable='between(t,{start},{end})'[{out_label}]"
         )
         last_label = out_label
 
@@ -305,9 +340,7 @@ def _apply_overlays(base_path, overlays, tmp):
             else:
                 mix_labels.append(f"{input_idx}:a")
         labels_str = "".join(f"[{l}]" for l in mix_labels)
-        filter_parts.append(
-            f"{labels_str}amix=inputs={len(mix_labels)}:duration=first:dropout_transition=0[aout]"
-        )
+        filter_parts.append(f"{labels_str}amix=inputs={len(mix_labels)}:duration=first:dropout_transition=0[aout]")
         audio_label = "aout"
 
     filter_complex = ";".join(filter_parts)
@@ -320,7 +353,7 @@ def _apply_overlays(base_path, overlays, tmp):
     return composited
 
 
-def render_project(project_path, output_path=None):
+def render_project(project_path: str, output_path: str | None = None) -> dict:
     """
     渲染整个项目: 按顺序裁剪/缩放每个片段到统一画布尺寸和帧率，应用片段间的
     转场，再叠加所有叠加层，输出最终视频文件。
@@ -332,10 +365,7 @@ def render_project(project_path, output_path=None):
     w, h, fps = project["width"], project["height"], project["fps"]
 
     with tempfile.TemporaryDirectory() as tmp:
-        normalized = [
-            _normalize_clip(clip, i, w, h, fps, tmp)
-            for i, clip in enumerate(project["clips"])
-        ]
+        normalized = [_normalize_clip(clip, i, w, h, fps, tmp) for i, clip in enumerate(project["clips"])]
 
         base = _merge_clips(normalized, project["clips"], tmp)
 
@@ -352,10 +382,10 @@ def render_project(project_path, output_path=None):
 
         shutil.copy(base, output_path)
 
-    info = _probe(output_path)
+    info = probe_video(output_path, require_video=False)
     return {
         "output_path": output_path,
-        "duration": round(info["duration"], 3),
+        "duration": round(info.duration, 3),
         "clip_count": len(project["clips"]),
         "overlay_count": len(project.get("overlays", [])),
     }

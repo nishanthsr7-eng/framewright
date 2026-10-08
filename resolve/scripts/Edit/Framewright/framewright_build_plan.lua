@@ -1,6 +1,6 @@
 -- Framewright: build a timeline from the latest edit plan, then check every clip landed on its frame.
--- Run in Resolve (Free or Studio): Workspace > Scripts > Edit > Framewright_Build_Plan. Output: Workspace > Console.
--- Reads <repo>/output/framewright_plan.lua, written by auto_amv_plan / build_edit_plan.
+-- Run in Resolve (Free or Studio): Workspace > Scripts > Edit > Framewright > framewright_build_plan. Output: Workspace > Console.
+-- Reads <repo>/output/framewright_plan.lua, written by auto_amv_plan / build_edit_plan, or by prepare_resolve for an exact match of the render_plan MP4.
 -- Lua, not Python, so it works even when Resolve can't find a Python install.
 
 print(string.rep("=", 60))
@@ -19,7 +19,7 @@ print = function(...)
     local parts = {}
     for i = 1, select("#", ...) do parts[#parts + 1] = tostring(select(i, ...)) end
     log_lines[#log_lines + 1] = table.concat(parts, " ")
-    _print(...)
+     _print(...)Z
 end
 
 local plan_file = ROOT .. "/output/framewright_plan.lua"
@@ -68,6 +68,11 @@ if #want > 0 then
 end
 local skipped = {}
 for _, p in ipairs(want) do if not items[norm(p)] then table.insert(skipped, "could not import " .. p) end end
+-- title overlays from prepare_resolve carry straight alpha
+for _, c in ipairs(plan.clips or {}) do
+    local it = items[norm(c.file)]
+    if c.alpha and it then it:SetClipProperty("Alpha mode", "Straight") end
+end
 
 -- timeline with a unique name
 local name, taken = proj_cfg.name or "framewright", {}
@@ -77,6 +82,15 @@ while taken[final] do final = name .. "_" .. n; n = n + 1 end
 local timeline = mp:CreateEmptyTimeline(final)
 if not timeline then print("Could not create timeline " .. final) return end
 project:SetCurrentTimeline(timeline)
+-- project settings only stick on a project without timelines, so also set them on this timeline
+timeline:SetSetting("useCustomSettings", "1")
+timeline:SetSetting("timelineFrameRate", tostring(fps))
+timeline:SetSetting("timelineResolutionWidth", tostring(proj_cfg.width or 1920))
+timeline:SetSetting("timelineResolutionHeight", tostring(proj_cfg.height or 1080))
+local tl_fps = tonumber(timeline:GetSetting("timelineFrameRate"))
+if tl_fps and math.abs(tl_fps - fps) > 0.01 then
+    table.insert(skipped, string.format("timeline runs at %s fps, plan wants %s: use a new project", tl_fps, fps))
+end
 local max_track = 1
 for _, c in ipairs(plan.clips or {}) do max_track = math.max(max_track, c.track or 1) end
 while timeline:GetTrackCount("video") < max_track do timeline:AddTrack("video") end
@@ -90,7 +104,8 @@ local function add_marker(at_s, color, label)
 end
 
 -- place clips: frame-exact slot from plan.at to the next cut. Scripts can't retime, so slowed clips
--- are placed at 1x for their slot length and get a Purple SPEED marker.
+-- are placed at 1x for their slot length and get a Purple SPEED marker. Plans from prepare_resolve
+-- (plan.exact) have speed, flash and shake already baked into each cut, so nothing is marked missing.
 local clips = {}
 for _, c in ipairs(plan.clips or {}) do table.insert(clips, c) end
 table.sort(clips, function(a, b) return a.at < b.at end)

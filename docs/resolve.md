@@ -5,7 +5,7 @@ Framewright ends in DaVinci Resolve. Three parts live in `resolve/`:
 | Folder | What | Edition |
 |---|---|---|
 | `resolve/templates/` | 90 Fusion templates: 42 titles, 27 effects, 16 transitions, 5 generators | Free and Studio |
-| `resolve/scripts/` | 20 Lua scripts (Edit + Utility) | Free and Studio |
+| `resolve/scripts/` | 21 Lua scripts (Edit + Utility) | Free and Studio |
 | `resolve/bridge/` | Python helpers imported by LLM-generated scripts | Free and Studio |
 
 ## Install
@@ -32,7 +32,7 @@ It copies into Resolve's per-user Fusion folder:
 | macOS | `~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/` |
 | Linux | `~/.local/share/DaVinciResolve/Fusion/` |
 
-- `resolve/scripts/Edit`, `Utility` → `<Fusion>/Scripts/Edit`, `Utility`
+- `resolve/scripts/Edit/{Framewright,Markers,Clips}`, `Utility/{Export,Timeline,Media Pool}` → same paths under `<Fusion>/Scripts/`
 - `resolve/templates/*` → `<Fusion>/Templates/Edit/{Titles,Effects,Transitions,Generators}`
 
 Quit and reopen Resolve to refresh the Effects panel.
@@ -40,7 +40,7 @@ Quit and reopen Resolve to refresh the Effects panel.
 ## Running an LLM-generated script
 
 1. Run the analysis servers and build an edit plan ([edit-plan.md](edit-plan.md)).
-2. Give the plan and `prompts/resolve-script.md` to any LLM. It returns a Python script.
+2. Give the plan and `prompts/resolve-script.md` to a capable hosted LLM. It returns a Python script.
 3. Save it into `<Fusion>/Scripts/Edit/` and run it from **Workspace → Scripts**. This works in the free edition.
 4. Studio only: you can also run it from a terminal with Resolve's external scripting API.
 
@@ -65,9 +65,14 @@ Full flow: [workflow.md](workflow.md).
 
 ## Lua scripts
 
-**Edit:** `add_interval_markers`, `auto_scene_markers`, `batch_add_effect`, `beat_sync_prep`, `colorize_tracks`, `copy_grade_to_track`, `flag_short_clips`, `insert_flash_frames`, `remove_all_markers`, `set_all_duration`.
-
-**Utility:** `timeline_stats`, `find_gaps`, `export_clip_list`, `export_markers_csv`, `youtube_chapters`, `organize_media_pool`, `duplicate_timeline`, `rename_sequential`, `clear_clip_colors`, `count_clip_usage`.
+| Menu (Workspace → Scripts) | Scripts |
+|---|---|
+| Edit → Framewright | `framewright_build_plan` (builds the latest plan, see [resolve-free-scripts.md](resolve-free-scripts.md)), `beat_sync_prep` |
+| Edit → Markers | `add_interval_markers`, `auto_scene_markers`, `batch_add_effect`, `remove_all_markers` |
+| Edit → Clips | `colorize_tracks`, `copy_grade_to_track`, `flag_short_clips`, `insert_flash_frames`, `set_all_duration` |
+| Utility → Export | `export_clip_list`, `export_markers_csv`, `youtube_chapters` |
+| Utility → Timeline | `timeline_stats`, `find_gaps`, `duplicate_timeline`, `count_clip_usage` |
+| Utility → Media Pool | `organize_media_pool`, `rename_sequential`, `clear_clip_colors` |
 
 Output appears in Workspace → Console.
 

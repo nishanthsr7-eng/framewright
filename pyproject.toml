@@ -35,7 +35,7 @@ extend-exclude = ["models", "input", "output", "resolve/templates"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
 # Style-only rules the existing code base does not follow yet.
-ignore = ["E501", "E702", "E731", "E741", "W293", "B006", "B007", "B904", "B905"]
+ignore = ["E501", "E702", "E731", "E741", "W293", "B007"]
 
 [tool.pyright]
 include = ["servers", "resolve/bridge", "evals", "scripts"]

@@ -1,9 +1,12 @@
 """Edit plan (docs/edit-plan.md): draft one from music + clips, and validate one before Resolve runs it."""
+
 import json
 import os
 import subprocess
 
-from beat_sync_mcp.beat_sync import _get_output_root, detect_beats
+from framewright_core import output_root as _get_output_root
+
+from beat_sync_mcp.beat_sync import detect_beats
 
 PLAN_VERSION = "0.1"
 
@@ -22,7 +25,10 @@ def _media_info(path):
         raise FileNotFoundError(path)
     out = subprocess.run(
         ["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", path],
-        capture_output=True, text=True, timeout=60,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=60,
     )
     if out.returncode != 0:
         raise RuntimeError(f"ffprobe could not read {path}")
@@ -32,12 +38,22 @@ def _media_info(path):
     if v:
         num, den = (v.get("r_frame_rate", "0/1").split("/") + ["1"])[:2]
         fps = float(num) / float(den) if float(den) else None
-    return {"duration": float(data["format"].get("duration") or 0.0), "fps": fps,
-            "width": int(v["width"]) if v else None, "height": int(v["height"]) if v else None}
+    return {
+        "duration": float(data["format"].get("duration") or 0.0),
+        "fps": fps,
+        "width": int(v["width"]) if v else None,
+        "height": int(v["height"]) if v else None,
+    }
 
 
-def build_edit_plan(clip_paths, music_path, output_path=None, beats_per_cut=2, max_duration=None,
-                    project_name=None):
+def build_edit_plan(
+    clip_paths: list[str],
+    music_path: str,
+    output_path: str | None = None,
+    beats_per_cut: int = 2,
+    max_duration: float | None = None,
+    project_name: str | None = None,
+) -> dict:
     """Beat-grid + one clip per cut, cycling through clips and walking forward through each."""
     music = _media_info(music_path)
     infos = [_media_info(p) for p in clip_paths]
@@ -56,7 +72,7 @@ def build_edit_plan(clip_paths, music_path, output_path=None, beats_per_cut=2, m
     fps = round(first["fps"] or 30.0, 3)
     cursor = [0.0] * len(clip_paths)  # next unused source second per clip
     clips = []
-    for i, (at, nxt) in enumerate(zip(cuts, cuts[1:])):
+    for i, (at, nxt) in enumerate(zip(cuts, cuts[1:], strict=False)):
         length = round(nxt - at, 3)
         if length < 0.05:
             continue
@@ -65,8 +81,16 @@ def build_edit_plan(clip_paths, music_path, output_path=None, beats_per_cut=2, m
             cursor[k] = 0.0  # wrap to the start of a short clip
         if length > infos[k]["duration"]:
             length = round(infos[k]["duration"], 3)
-        clips.append({"file": clip_paths[k], "in": round(cursor[k], 3), "out": round(cursor[k] + length, 3),
-                      "track": 1, "at": round(at, 3), "speed": 1.0})
+        clips.append(
+            {
+                "file": clip_paths[k],
+                "in": round(cursor[k], 3),
+                "out": round(cursor[k] + length, 3),
+                "track": 1,
+                "at": round(at, 3),
+                "speed": 1.0,
+            }
+        )
         cursor[k] += length
 
     name = project_name or os.path.splitext(os.path.basename(music_path))[0] + "_edit"
@@ -79,7 +103,7 @@ def build_edit_plan(clip_paths, music_path, output_path=None, beats_per_cut=2, m
         "titles": [],
         "markers": [],
         "notes": "Draft from build_edit_plan. Add downbeats/sections from audio_analyzer, titles and "
-                 "transitions, then run validate_plan.",
+        "transitions, then run validate_plan.",
     }
     if output_path is None:
         out_dir = os.path.join(_get_output_root(), os.path.splitext(os.path.basename(music_path))[0])
@@ -88,8 +112,13 @@ def build_edit_plan(clip_paths, music_path, output_path=None, beats_per_cut=2, m
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(plan, f, indent=2)
     write_plan_lua(plan, output_path)
-    return {"output_path": output_path, "clip_count": len(clips), "bpm": beats["tempo"],
-            "duration": round(end, 3), "fps": fps}
+    return {
+        "output_path": output_path,
+        "clip_count": len(clips),
+        "bpm": beats["tempo"],
+        "duration": round(end, 3),
+        "fps": fps,
+    }
 
 
 def _lua(v):
@@ -106,8 +135,8 @@ def _lua(v):
     return "nil"
 
 
-def write_plan_lua(plan, plan_path, base_dir=None):
-    """Write output/framewright_plan.lua for resolve/scripts/Edit/Framewright_Build_Plan.lua.
+def write_plan_lua(plan: dict, plan_path: str, base_dir: str | None = None) -> str:
+    """Write output/framewright_plan.lua for resolve/scripts/Edit/Framewright/framewright_build_plan.lua.
     Resolve Free may not find Python, but always runs Lua; paths are made absolute here."""
     base_dir = base_dir or _repo_root()
     absp = lambda p: os.path.abspath(_resolve_path(p, base_dir)).replace("\\", "/")
@@ -127,7 +156,12 @@ def _num(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
-def validate_plan(plan_path, base_dir=None, beat_tolerance_frames=1, require_beats=True):
+def validate_plan(
+    plan_path: str,
+    base_dir: str | None = None,
+    beat_tolerance_frames: int = 1,
+    require_beats: bool = True,
+) -> dict:
     """Return errors (Resolve would fail or the edit is wrong) and warnings (probably unintended)."""
     with open(plan_path, encoding="utf-8") as f:
         plan = json.load(f)
@@ -213,7 +247,7 @@ def validate_plan(plan_path, base_dir=None, beat_tolerance_frames=1, require_bea
 
     for track, spans in by_track.items():
         spans.sort()
-        for (s1, e1, i1), (s2, _, i2) in zip(spans, spans[1:]):
+        for (s1, e1, i1), (s2, _, i2) in zip(spans, spans[1:], strict=False):
             if s2 < e1 - 0.5 / fps:
                 errors.append(f"clips[{i1}] and clips[{i2}] overlap on track {track} ({round(e1 - s2, 3)}s)")
             elif s2 > e1 + 1.5 / fps:
@@ -228,6 +262,11 @@ def validate_plan(plan_path, base_dir=None, beat_tolerance_frames=1, require_bea
         if not (_num(mk.get("at")) and mk["at"] >= 0):
             errors.append(f"markers[{i}]: at must be a number >= 0")
 
-    return {"valid": not errors, "errors": errors, "warnings": warnings,
-            "clip_count": len(plan.get("clips") or []), "timeline_duration": round(timeline_end, 3),
-            "plan_path": plan_path}
+    return {
+        "valid": not errors,
+        "errors": errors,
+        "warnings": warnings,
+        "clip_count": len(plan.get("clips") or []),
+        "timeline_duration": round(timeline_end, 3),
+        "plan_path": plan_path,
+    }

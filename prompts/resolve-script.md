@@ -1,10 +1,10 @@
 # Prompt: edit plan → DaVinci Resolve Lua script
 
-Works with any LLM (ChatGPT, Claude, Gemini, local models). Copy everything below the line, then paste your edit plan JSON at the end. The plan format is in [docs/edit-plan.md](../docs/edit-plan.md); an example is in [examples/edit_plan.example.json](../examples/edit_plan.example.json).
+Use a capable hosted API model (e.g. GPT- or Claude-class); small local models don't produce reliable scripts. Copy everything below the line, then paste your edit plan JSON at the end. The plan format is in [docs/edit-plan.md](../docs/edit-plan.md); an example is in [examples/edit_plan.example.json](../examples/edit_plan.example.json).
 
-Save the reply as a `.lua` file in Resolve's `Fusion/Scripts/Edit/` folder, restart Resolve, and run it from **Workspace → Scripts → Edit**. Lua works in Resolve Free without any Python install. See [docs/resolve-free-scripts.md](../docs/resolve-free-scripts.md) for how scripts get into Resolve and how to check they ran.
+Save the reply as a `.lua` file in Resolve's `Fusion/Scripts/Edit/` folder, restart Resolve and run it from **Workspace → Scripts → Edit**. Lua works in Resolve Free without any Python install. See [docs/resolve-free-scripts.md](../docs/resolve-free-scripts.md) for how scripts get into Resolve and how to check they ran.
 
-No LLM needed for the standard build: `resolve/scripts/Edit/Framewright_Build_Plan.lua` already builds any plan. Use this prompt when you want a custom script (different track layout, extra markers, partial rebuilds).
+No LLM needed for the standard build: `resolve/scripts/Edit/Framewright/framewright_build_plan.lua` already builds any plan. Use this prompt when you want a custom script (different track layout, extra markers, partial rebuilds).
 
 ---
 

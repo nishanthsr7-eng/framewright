@@ -5,7 +5,7 @@ The edit plan is the hand-off between the analysis tools and the LLM that writes
 Status: **draft v0.1**.
 
 - `build_edit_plan` (beat-sync server) drafts a plan from a song and clips, with cuts on the beat.
-- `validate_plan` checks a plan before Resolve runs it: files exist, `in`/`out` fit inside each clip, no overlaps on a track, and clips start on a beat (within `beat_tolerance_frames`). Errors mean Resolve would fail or build the wrong edit. Warnings flag gaps and off-beat cuts.
+- `validate_plan` checks a plan before Resolve runs it: files exist, `in`/`out` fit inside each clip, no overlaps on a track and clips start on a beat (within `beat_tolerance_frames`). Errors mean Resolve would fail or build the wrong edit. Warnings flag gaps and off-beat cuts.
 
 ## Shape
 
@@ -68,6 +68,7 @@ Status: **draft v0.1**.
 ## Tools that read or write plans
 
 - `build_edit_plan` (beat_sync): simple draft, clips in order on the beat.
-- `auto_amv_plan` (beat_sync): full AMV draft with sections, motion-picked shots, and `Flash White` + `Screen Shake` on drop/chorus downbeats.
+- `auto_amv_plan` (beat_sync): full AMV draft with sections, motion-picked shots and `Flash White` + `Screen Shake` on drop/chorus downbeats.
 - `validate_plan` (beat_sync): check before rendering or running Resolve.
 - `render_plan` (timeline_project): render to MP4 without Resolve. Uses track 1, `speed`, `music`, flash/shake markers and `titles`; `platform="tiktok"` makes a 9:16 version.
+- `prepare_resolve` (timeline_project): bake the plan so Resolve rebuilds exactly the `render_plan` MP4 (speed, flash, shake, titles, crop, music), then run `framewright_build_plan`.

@@ -14,6 +14,7 @@ No hardcoded paths: the scripting module location comes from the
 RESOLVE_SCRIPT_API / RESOLVE_SCRIPT_LIB environment variables, or the
 standard install location for the OS.
 """
+
 from __future__ import annotations
 
 import json
@@ -25,8 +26,10 @@ from pathlib import Path
 # Standard Resolve install locations: (scripting API folder, fusionscript library).
 _DEFAULTS = {
     "Windows": (
-        os.path.join(os.environ.get("PROGRAMDATA", r"C:\ProgramData"),
-                     r"Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting"),
+        os.path.join(
+            os.environ.get("PROGRAMDATA", r"C:\ProgramData"),
+            r"Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting",
+        ),
         r"C:\Program Files\Blackmagic Design\DaVinci Resolve\fusionscript.dll",
     ),
     "Darwin": (
@@ -40,8 +43,22 @@ _DEFAULTS = {
 }
 
 MARKER_COLORS = {
-    "Blue", "Cyan", "Green", "Yellow", "Red", "Pink", "Purple", "Fuchsia",
-    "Rose", "Lavender", "Sky", "Mint", "Lemon", "Sand", "Cocoa", "Cream",
+    "Blue",
+    "Cyan",
+    "Green",
+    "Yellow",
+    "Red",
+    "Pink",
+    "Purple",
+    "Fuchsia",
+    "Rose",
+    "Lavender",
+    "Sky",
+    "Mint",
+    "Lemon",
+    "Sand",
+    "Cocoa",
+    "Cream",
 }
 
 
@@ -50,6 +67,7 @@ class BridgeError(RuntimeError):
 
 
 # ── connection ────────────────────────────────────────────────────────────────
+
 
 def connect(resolve=None):
     """Return the Resolve object. Pass the `resolve` global when running inside Resolve."""
@@ -98,6 +116,7 @@ def set_format(project, width: int, height: int, fps: float) -> bool:
 
 # ── time ──────────────────────────────────────────────────────────────────────
 
+
 def to_frames(seconds: float, fps: float) -> int:
     return int(round(seconds * fps))
 
@@ -111,6 +130,7 @@ def to_srt_time(seconds: float) -> str:
 
 
 # ── media pool ────────────────────────────────────────────────────────────────
+
 
 def get_bin(media_pool, path: str):
     """Get or create a bin by slash path, e.g. "Framewright/Video"."""
@@ -171,6 +191,7 @@ def clip_fps(item, fallback: float) -> float:
 
 # ── timeline ──────────────────────────────────────────────────────────────────
 
+
 def create_timeline(project, media_pool, name: str, video_tracks: int = 1):
     """Create a timeline with a unique name (never deletes existing ones) and make it current."""
     taken = {project.GetTimelineByIndex(i).GetName() for i in range(1, project.GetTimelineCount() + 1)}
@@ -186,8 +207,17 @@ def create_timeline(project, media_pool, name: str, video_tracks: int = 1):
     return timeline
 
 
-def place_clip(media_pool, timeline, item, in_s: float, out_s: float, at_s: float,
-               fps: float, track: int = 1, media_type: int | None = 1):
+def place_clip(
+    media_pool,
+    timeline,
+    item,
+    in_s: float,
+    out_s: float,
+    at_s: float,
+    fps: float,
+    track: int = 1,
+    media_type: int | None = 1,
+):
     """Place item[in_s:out_s] at timeline time at_s. media_type: 1 video, 2 audio, None both."""
     src_fps = clip_fps(item, fps)
     info = {
@@ -211,8 +241,9 @@ def set_speed(timeline_item, speed: float) -> bool:
         return False
 
 
-def add_marker(timeline, at_s: float, fps: float, color: str = "Blue", name: str = "",
-               note: str = "", duration_s: float = 0.0) -> bool:
+def add_marker(
+    timeline, at_s: float, fps: float, color: str = "Blue", name: str = "", note: str = "", duration_s: float = 0.0
+) -> bool:
     if color not in MARKER_COLORS:
         color = "Blue"
     frame = to_frames(at_s, fps)
@@ -228,8 +259,7 @@ def write_srt(segments, path) -> Path:
     """segments: [{start, end, text}] (e.g. transcribe_audio output)."""
     lines = []
     for i, seg in enumerate(segments, 1):
-        lines += [str(i), f"{to_srt_time(seg['start'])} --> {to_srt_time(seg['end'])}",
-                  str(seg["text"]).strip(), ""]
+        lines += [str(i), f"{to_srt_time(seg['start'])} --> {to_srt_time(seg['end'])}", str(seg["text"]).strip(), ""]
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines), encoding="utf-8")
@@ -237,6 +267,7 @@ def write_srt(segments, path) -> Path:
 
 
 # ── edit plan ─────────────────────────────────────────────────────────────────
+
 
 def load_plan(path) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -305,12 +336,14 @@ def build_from_plan(resolve, plan: dict, base_dir=".", log=print) -> dict:
         except Exception:
             pass
         if not ok:
-            report["markers"] += add_marker(timeline, t["at"], fps, "Yellow", f"TITLE: {t['text']}",
-                                            duration_s=t.get("duration", 0))
+            report["markers"] += add_marker(
+                timeline, t["at"], fps, "Yellow", f"TITLE: {t['text']}", duration_s=t.get("duration", 0)
+            )
 
     for m in plan.get("markers", []):
-        report["markers"] += add_marker(timeline, m["at"], fps, m.get("color", "Blue"),
-                                        m.get("name", ""), m.get("note", ""))
+        report["markers"] += add_marker(
+            timeline, m["at"], fps, m.get("color", "Blue"), m.get("name", ""), m.get("note", "")
+        )
 
     log(f"Placed {report['clips_placed']}/{len(clips)} clips, {report['markers']} markers.")
     for s in report["skipped"]:
