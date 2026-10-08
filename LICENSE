@@ -22,9 +22,5 @@ SOFTWARE.
 
 ---
 
-This license covers the original code in this repository (the `Tools/*_MCP`
-servers except where noted, and `DaVinci_Scripts/`). Several tools under
-`DaVinci_Tools/` and `Tools/Frame_Extractor_MCP/` are vendored third-party
-projects distributed under their own licenses - see the LICENSE file inside
-each of those folders, and the "Third-party tools" section in DAVINCI.md and
-README.md.
+This license covers the source code and documentation in this repository. Third-party code, models, fonts and
+demo media keep their own terms and are credited in CREDITS.md.

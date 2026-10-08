@@ -19,21 +19,14 @@ Framewright is MIT-licensed. The items below come from other authors and keep th
 
 ## Fonts
 
-Bundled in `servers/assets/text_overlay/`: Anton, Bebas Neue, Montserrat, Oswald, Poppins, from [Google Fonts](https://fonts.google.com), SIL Open Font License.
+Bundled in `servers/assets/text_overlay/fonts/` (24 families), from [Google Fonts](https://fonts.google.com), SIL Open Font License 1.1 (see `fonts/OFL.txt`) unless noted:
+
+Anton, Archivo Black, Bangers, Bebas Neue, Black Ops One, Bungee, Caveat, Dancing Script, Fredoka, Inter, Lobster, Lora, Merriweather, Montserrat, Open Sans, Oswald, Pacifico, Permanent Marker (Apache-2.0), Playfair Display, Poppins, PT Serif, Roboto Condensed, Russo One, Teko.
+
+## Demo media
+
+Credits for the F1 demo footage and music: [CREDITS.md](../CREDITS.md).
 
 ## Libraries
 
-ffmpeg, librosa, PySceneDetect, ONNX Runtime, Pillow, numpy, and the MCP Python SDK. Each is installed as a dependency under its own license.
-
-## Related Resolve projects
-
-Earlier versions bundled these. They were removed from the repo and are credited here instead. Use them alongside Framewright:
-
-| Project | What it is | License |
-|---|---|---|
-| [tmoroney/auto-subs](https://github.com/tmoroney/auto-subs) | Local AI subtitle generator with Resolve, Premiere Pro and After Effects integration | MIT |
-| [X-Raym/DaVinci-Resolve-Scripts](https://github.com/X-Raym/DaVinci-Resolve-Scripts) | Lua scripts for editing, markers, media pool and timelines | see repo |
-| [IgorRidanovic/DaVinciResolve-DynamicText](https://github.com/IgorRidanovic/DaVinciResolve-DynamicText) | Fusion title templates driven by external data | MIT |
-| [Greenysmac/awesome-davinci-resolve](https://github.com/Greenysmac/awesome-davinci-resolve) | Curated list of Resolve plugins, DCTLs, scripts and tools | CC0 |
-| [thatcherfreeman/resolve-scripts](https://github.com/thatcherfreeman/resolve-scripts) | Python scripts for Resolve and Fusion | see repo |
-| [olegkupshukov/claude-resolve](https://github.com/olegkupshukov/claude-resolve) | AI terminal plugin for Resolve Studio that generates motion graphics | MIT |
+ffmpeg, librosa, PySceneDetect, ONNX Runtime, Pillow, numpy and the MCP Python SDK. Each is installed as a dependency under its own license.
