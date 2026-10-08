@@ -6,6 +6,30 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.11"
+
+      - name: Lockfile is up to date
+        run: uv lock --check
+
+      - name: Ruff
+        run: uv run --only-group dev ruff check .
+
+      - name: Ruff format
+        run: uv run --only-group dev ruff format --check .
+
+      # Not a gate yet: the code base still has pyright errors to burn down.
+      - name: Pyright (informational)
+        continue-on-error: true
+        run: uv run --group dev --group test pyright
+
   test:
     strategy:
       fail-fast: false
@@ -23,12 +47,33 @@ jobs:
       - name: Install ffmpeg
         uses: FedericoCarboni/setup-ffmpeg@v3
 
-      - name: ffmpeg version
-        run: ffmpeg -version
-
-      # Only the dev tools; server deps (torch, onnx, whisper) are too heavy for CI.
-      - name: Lint
-        run: uv run --only-group dev ruff check .
-
+      # The light `test` group: core plus servers without torch/onnx/whisper.
       - name: Unit tests
-        run: uv run --only-group dev pytest
+        run: uv run --only-group test pytest -m "not ffmpeg"
+
+      - name: ffmpeg integration tests
+        run: uv run --only-group test pytest -m ffmpeg
+
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.11"
+
+      - name: Install ffmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+
+      - name: Make synthetic fixtures
+        run: uv run --only-group eval python evals/make_fixtures.py
+
+      # Fails if any cut is more than one frame off its beat.
+      - name: Beat-sync eval
+        run: uv run --only-group eval python evals/eval_beat_sync.py
+
+      # Fails if scene precision or recall drops below 1.0.
+      - name: Scene-cut eval
+        run: uv run --only-group eval python evals/eval_scenes.py
