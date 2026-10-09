@@ -1,6 +1,6 @@
 # Prompt: edit plan → DaVinci Resolve Lua script
 
-Use a capable hosted API model (e.g. GPT- or Claude-class); small local models don't produce reliable scripts. Copy everything below the line, then paste your edit plan JSON at the end. The plan format is in [docs/edit-plan.md](../docs/edit-plan.md); an example is in [examples/edit_plan.example.json](../examples/edit_plan.example.json).
+Use a capable hosted model; small local models don't produce reliable scripts. Copy everything below the line, then paste your edit plan JSON at the end. The plan format is in [docs/edit-plan.md](../docs/edit-plan.md); an example is in [examples/edit_plan.example.json](../examples/edit_plan.example.json).
 
 Save the reply as a `.lua` file in Resolve's `Fusion/Scripts/Edit/` folder, restart Resolve and run it from **Workspace → Scripts → Edit**. Lua works in Resolve Free without any Python install. See [docs/resolve-free-scripts.md](../docs/resolve-free-scripts.md) for how scripts get into Resolve and how to check they ran.
 

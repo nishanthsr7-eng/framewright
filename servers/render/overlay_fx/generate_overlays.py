@@ -3,6 +3,7 @@ src/overlay_fx_mcp/assets/. Run with: python generate_overlays.py
 """
 
 import os
+import sys
 
 import numpy as np
 from PIL import Image
@@ -27,7 +28,7 @@ def make(name: str, blobs: list[tuple]) -> None:
     os.makedirs(OUT_DIR, exist_ok=True)
     path = os.path.join(OUT_DIR, f"{name}.png")
     Image.fromarray(canvas, "RGB").save(path)
-    print(f"wrote {path}")
+    print(f"wrote {path}", file=sys.stderr)
 
 
 if __name__ == "__main__":

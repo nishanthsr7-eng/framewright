@@ -3,6 +3,7 @@ Run with: python generate_luts.py
 """
 
 import os
+import sys
 from collections.abc import Callable
 
 import numpy as np
@@ -26,7 +27,7 @@ def write_cube(name: str, transform: Callable[[float, float, float], tuple[float
                 lines.append(f"{nr:.6f} {ng:.6f} {nb:.6f}")
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
-    print(f"wrote {path}")
+    print(f"wrote {path}", file=sys.stderr)
 
 
 def cinematic_teal_orange(r: float, g: float, b: float) -> tuple[float, float, float]:

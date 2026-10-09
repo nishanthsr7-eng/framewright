@@ -27,7 +27,7 @@ def _save_project(project_path, project):
         json.dump(project, f, ensure_ascii=False, indent=2)
 
 
-def create_project(project_path: str, width: int = 1920, height: int = 1080, fps: int = 30) -> dict:
+def create_project(project_path: str, width: int = 1920, height: int = 1080, fps: float = 30) -> dict:
     """
     创建一个新的剪辑项目(JSON 文件)，包含空的片段列表和叠加层列表。
     """

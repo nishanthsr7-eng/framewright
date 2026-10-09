@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from pydantic import Field
 
 if sys.platform == "win32":
-    sys.stderr.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")  # pyright: ignore[reportAttributeAccessIssue]
 
 
 from framewright_core import run_tool as _run
@@ -50,7 +50,7 @@ def add_text_overlay(
     text: Annotated[str, Field(min_length=1, description="Text to show; '\\n' starts a new line")],
     output_folder: OutFolder = None,
     style: Style = "general",
-    font: Annotated[FontName | None, Field(description="Bundled font; default from style")] = None,
+    font: Annotated[FontName | None, Field(description="Bundled font; default from style")] = None,  # pyright: ignore[reportInvalidTypeForm]
     font_size: Annotated[int | None, Field(gt=0, description="Pixels; default is about 9% of video height")] = None,
     color: Annotated[Hex | list[Hex], Field(description="One colour, or two for a top-to-bottom gradient")] = "#FFFFFF",
     outline_color: Hex = "#000000",
@@ -97,7 +97,7 @@ def add_karaoke_captions(
     ],
     output_folder: OutFolder = None,
     style: Style = "general",
-    font: Annotated[FontName | None, Field(description="Bundled font; default from style")] = None,
+    font: Annotated[FontName | None, Field(description="Bundled font; default from style")] = None,  # pyright: ignore[reportInvalidTypeForm]
     font_size: Annotated[int | None, Field(gt=0, description="Pixels; default is about 5.5% of video height")] = None,
     color: Annotated[Hex, Field(description="Colour of words not yet spoken")] = "#FFFFFF",
     highlight_color: Annotated[Hex | None, Field(description="Colour of spoken words; default from style")] = None,

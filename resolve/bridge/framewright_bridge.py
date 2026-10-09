@@ -333,8 +333,8 @@ def build_from_plan(resolve, plan: dict, base_dir=".", log=print) -> dict:
         ok = None
         try:
             ok = timeline.InsertFusionTitleIntoTimeline(t.get("template", "Text+"))
-        except Exception:
-            pass
+        except Exception:  # Resolve API errors have no common type; fall back to a marker below
+            ok = None
         if not ok:
             report["markers"] += add_marker(
                 timeline, t["at"], fps, "Yellow", f"TITLE: {t['text']}", duration_s=t.get("duration", 0)

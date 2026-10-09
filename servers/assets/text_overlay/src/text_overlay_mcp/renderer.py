@@ -1,3 +1,4 @@
+import logging
 import os
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
@@ -57,8 +58,8 @@ def _load_font(name, size):
         font = ImageFont.truetype(os.path.join(FONTS_DIR, filename), size)
         try:
             font.set_variation_by_name(variation)
-        except Exception:
-            pass
+        except (OSError, ValueError) as e:  # older FreeType or a static build of the font
+            logging.warning("Font variation %r unavailable in %s: %s", variation, filename, e)
         return font
     return ImageFont.truetype(os.path.join(FONTS_DIR, entry), size)
 
@@ -84,6 +85,7 @@ def _gradient_rgba(size, color1, color2, direction="vertical"):
     c2 = _parse_color(color2)
     base = Image.new("RGBA", (w, h))
     px = base.load()
+    assert px is not None
     if direction == "horizontal":
         for x in range(w):
             t = x / max(w - 1, 1)
@@ -132,8 +134,8 @@ def render_text_block(
     dummy = Image.new("RGBA", (10, 10))
     bbox = ImageDraw.Draw(dummy).textbbox((0, 0), text, font=font, stroke_width=outline_width)
     pad = outline_width + 4 + (shadow_blur * 2 if shadow else 0)
-    w = (bbox[2] - bbox[0]) + pad * 2
-    h = (bbox[3] - bbox[1]) + pad * 2
+    w = int(bbox[2] - bbox[0]) + pad * 2
+    h = int(bbox[3] - bbox[1]) + pad * 2
     ox, oy = pad - bbox[0], pad - bbox[1]
 
     interior, ring, full = _text_masks(text, font, ox, oy, w, h, outline_width)
@@ -235,7 +237,7 @@ def render_karaoke_frame(
 
     x = (cw - line_w) // 2
     for img in rendered:
-        canvas.alpha_composite(img, (x, y + (line_h - img.height) // 2))
+        canvas.alpha_composite(img, (int(x), int(y + (line_h - img.height) // 2)))
         x += img.width + space_w
 
     return canvas

@@ -17,7 +17,7 @@ def stabilize_video(
     input_path: str,
     smoothing: int = 10,
     shakiness: int = 5,
-    zoom: int = 0,
+    zoom: float = 0,
     output_path: str | None = None,
     lossless: bool = False,
 ) -> dict:

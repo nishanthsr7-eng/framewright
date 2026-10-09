@@ -39,7 +39,7 @@ ignore = ["E501", "E702", "E731", "E741", "W293", "B007"]
 
 [tool.pyright]
 include = ["servers", "resolve/bridge", "evals", "scripts"]
-exclude = ["**/.venv", "**/__pycache__", "models", "output"]
+exclude = ["**/.venv", "**/__pycache__", "models", "output", "servers/assets/frame_extractor"]  # vendored
 typeCheckingMode = "basic"
 reportMissingImports = "warning"
 reportMissingModuleSource = "none"

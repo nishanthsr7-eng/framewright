@@ -2,7 +2,7 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
-## [0.1.0] - 2026-10-09
+## [0.1.0] - 2026-10-10
 
 First tagged release.
 
@@ -35,7 +35,7 @@ First tagged release.
 - PyAV pinned below 18 so Whisper transcription works on fresh installs.
 
 ### Docs
-- README written around the editor workflow, with results, performance and cost of one edit.
+- README written around the editor workflow, with results and performance.
 - Design decision records (`docs/decisions/`) and a beat-sync accuracy case study.
 - F1 worked example (`demos/f1`): five versions from a first beat plan to a 60 fps looping edit, plus an export of the final version to a Resolve timeline. Scripts and plans only; media stays out of git.
 - `CONTRIBUTING.md`, `SECURITY.md`, `CREDITS.md`, `.gitattributes`.

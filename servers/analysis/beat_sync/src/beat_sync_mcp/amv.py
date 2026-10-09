@@ -13,7 +13,7 @@ from framewright_core import output_root as _get_output_root
 from beat_sync_mcp.plan import PLAN_VERSION, _media_info, _repo_root, write_plan_lua
 
 # Beats per cut in each section label; None = no cuts inside the section (the previous shot holds).
-PACES = {
+PACES: dict[str, dict[str, int]] = {
     "hype": {"intro": 4, "verse": 2, "build": 2, "drop": 1, "chorus": 1, "outro": 4},
     "steady": {"intro": 4, "verse": 2, "build": 2, "drop": 2, "chorus": 2, "outro": 4},
     "chill": {"intro": 8, "verse": 4, "build": 4, "drop": 2, "chorus": 2, "outro": 8},
@@ -46,7 +46,8 @@ def _analyze_music(path, beats_per_bar=4):
     n = min(mfcc.shape[1], chroma.shape[1], len(rms))
     try:
         bounds = librosa.segment.agglomerative(np.vstack([mfcc[:, :n], chroma[:, :n]]), n_sec)
-    except Exception:
+    except (librosa.util.exceptions.ParameterError, ValueError) as e:  # too few frames to cluster
+        logging.warning("Section clustering failed, using even splits: %s", e)
         bounds = np.linspace(0, n, n_sec, endpoint=False, dtype=int)
     bounds = sorted(set(int(b) for b in bounds) | {0, n})
     times = librosa.frames_to_time(bounds, sr=sr, hop_length=hop)
@@ -150,7 +151,7 @@ def auto_amv_plan(
     end = min(float(end_time), audio["duration"]) if end_time else audio["duration"]
     beats = [b for b in audio["beats"] if b < end]
     down = [d for d in audio["downbeats"] if d < end]
-    sections = [dict(s, end=min(s["end"], end)) for s in audio["sections"] if s["start"] < end]
+    sections: list[dict] = [dict(s, end=min(s["end"], end)) for s in audio["sections"] if s["start"] < end]
 
     # shot pool
     shots, motion_by_clip = [], []

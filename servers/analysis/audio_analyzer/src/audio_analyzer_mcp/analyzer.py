@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 import tempfile
+from typing import Any
 
 import librosa
 import numpy as np
@@ -10,7 +11,7 @@ VIDEO_EXTS = {".mp4", ".mkv", ".mov", ".avi", ".webm", ".m4v", ".flv"}
 SOUNDFILE_EXTS = {".wav", ".flac", ".ogg", ".aiff", ".aif"}
 
 
-def _load_audio(audio_path, sr=22050, offset=0.0, duration=None):
+def _load_audio(audio_path, sr: Any = 22050, offset=0.0, duration=None) -> tuple[np.ndarray, int]:
     """
     加载音频文件（或视频文件中的音轨）为单声道波形数据。
     若输入是视频文件，先用 ffmpeg 提取音轨为临时 wav。
@@ -52,7 +53,7 @@ def _load_audio(audio_path, sr=22050, offset=0.0, duration=None):
         if tmp_path is not None:
             os.remove(tmp_path)
 
-    return y, sr
+    return y, int(sr)
 
 
 def get_audio_info(audio_path: str) -> dict:
@@ -77,7 +78,7 @@ def detect_beats(audio_path: str, start_time: float = 0.0, duration: float | Non
     y, sr = _load_audio(audio_path, offset=start_time, duration=duration)
     tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
     beat_times = librosa.frames_to_time(beat_frames, sr=sr) + start_time
-    tempo_val = float(tempo) if np.ndim(tempo) == 0 else float(tempo[0])
+    tempo_val = float(np.atleast_1d(tempo)[0])
     return {
         "tempo_bpm": round(tempo_val, 2),
         "beat_times": [round(float(t), 3) for t in beat_times],
@@ -104,7 +105,7 @@ def detect_downbeats(
     y, sr = _load_audio(audio_path, offset=start_time, duration=duration)
     tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
     onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-    tempo_val = float(tempo) if np.ndim(tempo) == 0 else float(tempo[0])
+    tempo_val = float(np.atleast_1d(tempo)[0])
 
     if len(beat_frames) == 0:
         return {"tempo_bpm": round(tempo_val, 2), "downbeat_times": [], "downbeat_count": 0}
@@ -167,7 +168,8 @@ def detect_sections(
 
     try:
         bound_frames = librosa.segment.agglomerative(features, n_sections)
-    except Exception:
+    except (librosa.util.exceptions.ParameterError, ValueError) as e:  # too few frames to cluster
+        logging.warning("Section clustering failed, using even splits: %s", e)
         bound_frames = np.linspace(0, n, n_sections, endpoint=False, dtype=int)
 
     bound_frames = sorted(set(int(b) for b in bound_frames) | {0, n})

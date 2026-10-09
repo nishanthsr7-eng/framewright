@@ -2,11 +2,11 @@
 
 **Let an AI do the tedious part of a video edit: beat-syncing, cutouts, captions. Then finish the cut yourself in DaVinci Resolve.**
 
-https://github.com/user-attachments/assets/884fd6ba-7747-45fc-98e4-92a29a5fe29d
+19 MCP servers · 45 tools · 380+ tests
 
-<sub>720p preview. **[View full video](FULL_VIDEO_URL)** in full quality.</sub>
+https://github.com/user-attachments/assets/65e602e1-29ac-44b7-8c3b-12e2115fe5ca
 
-Framewright is a set of small Python tools that an AI assistant can call over the **Model Context Protocol (MCP)**. They listen to the music, find the shots, transcribe speech and cut out subjects. The AI then turns those results into an edit plan and a DaVinci Resolve script that builds the timeline. It needs a capable hosted API model (GPT- or Claude-class); small local models can't write reliable Resolve scripts and aren't supported.
+Framewright is a set of small Python tools that any AI agent with **Model Context Protocol (MCP)** support can call. They listen to the music, find the shots, transcribe speech and cut out subjects. The agent then turns those results into an edit plan and a DaVinci Resolve script that builds the timeline. Use an MCP-capable agent app backed by a capable hosted model through your own API key or subscription; small local models can't write reliable Resolve scripts and aren't supported.
 
 ---
 
@@ -50,7 +50,12 @@ Model-based tools take `style="anime" | "general"`, so both animation and live-a
 2. Run setup. It installs every server, downloads models, creates `.mcp.json` and runs a smoke test:
    - Windows: `powershell -ExecutionPolicy Bypass -File scripts\setup.ps1`
    - Linux/macOS: `bash scripts/setup.sh`
-3. Point your MCP client at `.mcp.json`.
+3. Open an AI agent app that supports MCP, sign in or add your model API key, and load the servers from `.mcp.json`. The agent should now list the Framewright tools.
+4. Ask it for a first edit, for example:
+
+   > Detect the beats in `input/song.mp3`, cut the clips in `input/clips/` to them, validate the plan and render a preview.
+
+   It calls `detect_beats`, `build_edit_plan`, `validate_plan` and `render_plan`, and writes the plan JSON and a preview MP4 to `output/`. Run `prepare_resolve` next to build the same edit in Resolve.
 
 Details: [docs/setup.md](docs/setup.md). CPU-only check without installing anything locally: `docker build -t framewright . && docker run --rm framewright` (starts all 19 servers and lists their tools).
 
@@ -72,7 +77,7 @@ flowchart LR
 **Design decisions** (more in [docs/architecture.md](docs/architecture.md)):
 
 - **Many small servers, not one big one.** Each has its own dependencies, so the heavy ones (torch, ONNX, Whisper) only install where needed.
-- **The edit plan is the contract.** A JSON file the LLM, the validator, the previewer and Resolve all read, so each step can be checked on its own.
+- **The edit plan is the contract.** A JSON file the AI agent, the validator, the previewer and Resolve all read, so each step can be checked on its own.
 - **Resolve stays in charge of the final cut.** Tools prepare media; the editor finishes by hand.
 - **Frame-exact cuts.** Cuts are snapped to frames, then to detected onsets, so they land on the beat.
 
@@ -118,20 +123,6 @@ Seconds of processing per minute of 1080p footage at 24 fps (lower is better). M
 
 Run it on your machine: `uv run python scripts/benchmark.py --frames 48`.
 
-### Cost of one edit (Claude Opus 5.5)
-
-These are real numbers taken from the session logs of the F1 demo edit, not estimates. They cover the whole job, from setup and the first plan, through refining it (v03–v05), to landing the timeline in Resolve. Cost uses API list prices. Most input came from the prompt cache, which keeps the total low.
-
-| | Setup + first plan (v01–v02) | Refine (v03–v05) | Land in Resolve | **Total** |
-|---|---|---|---|---|
-| Your prompts | 3 | 6 | 3 | **12** |
-| Model requests | 41 | 155 | 32 | **228** |
-| Tool calls | 47 | 186 | 32 | **265** |
-| Output tokens | 22.1K | 203.1K | 32.8K | **258.0K** |
-| Cached input read | 3.6M | 13.4M | 2.8M | **19.8M** |
-| Cache writes (1 h) | 131.8K | 515.6K | 95.7K | **743.1K** |
-| Cost at API list price | $2.21 | $10.87 | $1.98 | **$15.06** |
-
 ---
 
 ## Limitations
@@ -145,7 +136,7 @@ These are real numbers taken from the session logs of the F1 demo edit, not esti
 
 ## Roadmap
 
-Planned work is tracked in [GitHub issues](https://github.com/nishanthsr7-eng/Video_Editor-MCP/issues).
+Planned work is tracked in [GitHub issues](https://github.com/nishanthsr7-eng/framewright/issues).
 
 ---
 
@@ -153,16 +144,17 @@ Planned work is tracked in [GitHub issues](https://github.com/nishanthsr7-eng/Vi
 
 ```
 servers/core/       framewright_core: shared ffmpeg, probe, paths, error helpers
+servers/*/tests/    Per-server unit and ffmpeg integration tests
+tests/              Cross-server, plan, Resolve script and template tests
 servers/analysis/   audio_analyzer, scene_detector, beat_sync, highlight_reel
 servers/assets/     frame_extractor, subject_extractor, chroma_key, text_overlay
 servers/render/     effects, lut_grading, color_match, compositor, overlay_fx, speed_ramp,
                     stabilization, ken_burns, audio_mastering, export_presets, timeline_project
 resolve/            Lua scripts, Fusion templates, bridge/ (helpers for generated scripts)
-prompts/            Prompt templates for the LLM step
+prompts/            Prompt templates for the AI agent
 examples/           Example edit plans
 demos/              Worked examples
 evals/              Synthetic fixtures and accuracy evals
-tests/              Unit and ffmpeg integration tests
 scripts/            Setup, model download, smoke test, eval runner
 docs/               Documentation
 models/             Model weights (downloaded, not in git)
@@ -177,7 +169,7 @@ models/             Model weights (downloaded, not in git)
 - [Setup](docs/setup.md): install, models, MCP client config
 - [Workflow](docs/workflow.md): from raw clips to a Resolve timeline
 - [Architecture](docs/architecture.md): how the pieces fit
-- [Edit plan](docs/edit-plan.md): the JSON format the LLM works from
+- [Edit plan](docs/edit-plan.md): the JSON format the AI agent works from
 - [DaVinci Resolve](docs/resolve.md): templates, scripts, install
 - [Servers](docs/README.md): every server and tool
 - [Third-party](docs/third-party.md): vendored code, models, fonts
@@ -192,7 +184,7 @@ uv run --only-group dev ruff check . && uv run --only-group dev ruff format --ch
 uv run --only-group test pytest
 ```
 
-How to add a server, code rules and tests: [CONTRIBUTING.md](CONTRIBUTING.md). Security reports and why to read generated scripts first: [SECURITY.md](SECURITY.md). Release history: [CHANGELOG.md](CHANGELOG.md).
+How to add a server, code rules and tests: [CONTRIBUTING.md](CONTRIBUTING.md). Security reports and why to read generated scripts first: [SECURITY.md](SECURITY.md). Community guidelines: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Release history: [CHANGELOG.md](CHANGELOG.md).
 
 ## License and credits
 

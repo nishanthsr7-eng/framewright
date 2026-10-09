@@ -37,6 +37,7 @@ def _script_name(pyproject: Path) -> str | None:
 
 
 def _rpc(proc: subprocess.Popen, lines: queue.Queue, msg: dict) -> dict | None:
+    assert proc.stdin is not None
     proc.stdin.write(json.dumps(msg) + "\n")
     proc.stdin.flush()
     if "id" not in msg:
@@ -94,7 +95,8 @@ def check(server_dir: Path) -> tuple[bool, str]:
             },
         )
         _rpc(proc, lines, {"jsonrpc": "2.0", "method": "notifications/initialized"})
-        tools = _rpc(proc, lines, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})["tools"]
+        listing = _rpc(proc, lines, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+        tools = listing["tools"] if listing else []
         if not tools:
             return False, "no tools"
         return True, ", ".join(t["name"] for t in tools)

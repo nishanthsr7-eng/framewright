@@ -335,7 +335,7 @@ def prepare_resolve(plan_path: str, platform: str = "none", base_dir: str | None
         )
         lua_music = {"file": absp(p), "start": 0}
 
-    proj = dict(plan.get("project") or {}, width=ow, height=oh, fps=fps)
+    proj: dict = dict(plan.get("project") or {}, width=ow, height=oh, fps=fps)
     proj.setdefault("name", stem)
     out = {"source": absp(plan_path), "project": proj, "clips": lua_clips, "markers": markers, "exact": True}
     if lua_music:

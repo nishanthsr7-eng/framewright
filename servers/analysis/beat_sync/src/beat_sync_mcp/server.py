@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 from pydantic import Field
 
 if sys.platform == "win32":
-    sys.stderr.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")  # pyright: ignore[reportAttributeAccessIssue]
 
 
 from framewright_core import run_tool as _run

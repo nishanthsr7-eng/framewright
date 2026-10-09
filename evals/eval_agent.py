@@ -164,7 +164,7 @@ def run_one(cfg: dict, music: str, request: str, beats: list[float], tmp: Path, 
     lua_ok = False
     try:
         lua_reply = chat(
-            cfg, "Follow the instructions exactly.", script_prompt.replace("PASTE YOUR EDIT PLAN HERE", raw)
+            cfg, "Follow the instructions exactly.", script_prompt.replace("PASTE YOUR EDIT PLAN HERE", raw or "")
         )
         lua = code_block(lua_reply, "lua")
         err = "no lua block" if lua is None else lua_check(lua)
@@ -186,10 +186,11 @@ def main() -> None:
 
     load_env()
     names = [args.only] if args.only else ["A", "B"]
-    cfgs = {n: endpoint(n) for n in names}
-    missing = [n for n, c in cfgs.items() if c is None]
+    found = {n: endpoint(n) for n in names}
+    missing = [n for n, c in found.items() if c is None]
     if missing:
         sys.exit(f"Set LLM_{missing[0]}_BASE_URL, _API_KEY and _MODEL (env or .env); see this file's docstring.")
+    cfgs = {n: c for n, c in found.items() if c is not None}
 
     truth = json.loads((FIX / "ground_truth.json").read_text(encoding="utf-8"))["audio"]
     doc = (ROOT / "docs" / "edit-plan.md").read_text(encoding="utf-8")

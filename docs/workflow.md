@@ -31,7 +31,7 @@ Put clips and music in `input/`. Check what you have:
 
 1. Collect the results into an edit plan JSON: [edit-plan.md](edit-plan.md). An example lives in `examples/`. `build_edit_plan` drafts one with cuts on the beat; run `validate_plan` on it (and again after LLM or hand edits).
 2. Preview it with `render_plan`, then run `prepare_resolve` on the same plan (same `platform`). It bakes speed, flashes, shakes and the crop into each cut, turns titles into transparent overlays and writes `output/framewright_plan.lua`.
-3. Need logic the standard build doesn't cover? Give the plan and `prompts/resolve-script.md` to a capable hosted API model (e.g. GPT- or Claude-class) for a custom Lua script. Small local models are not supported: they don't write reliable Resolve scripts.
+3. Need logic the standard build doesn't cover? Give the plan and `prompts/resolve-script.md` to a capable hosted model for a custom Lua script. Small local models are not supported: they don't write reliable Resolve scripts.
 
 You can also ask the LLM to write the plan itself from the analysis output; review it before step 5.
 

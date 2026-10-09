@@ -24,7 +24,9 @@ def _rms_db(path):
         text=True,
         timeout=60,
     )
-    return float(re.search(r"mean_volume:\s+(-?[\d.]+) dB", out.stderr).group(1))
+    m = re.search(r"mean_volume:\s+(-?[\d.]+) dB", out.stderr)
+    assert m, out.stderr
+    return float(m.group(1))
 
 
 def _probe(path):

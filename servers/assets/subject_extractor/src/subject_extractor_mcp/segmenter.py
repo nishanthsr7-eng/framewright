@@ -75,12 +75,12 @@ def get_mask(img: np.ndarray, style: str = "anime", size: int | None = None) -> 
 
     if cfg["letterbox"]:
         h, w = (size, max(int(size * w0 / h0), 1)) if h0 > w0 else (max(int(size * h0 / w0), 1), size)
-        resized = np.asarray(Image.fromarray(img).resize((w, h), Image.BILINEAR), dtype=np.float32) / 255.0
+        resized = np.asarray(Image.fromarray(img).resize((w, h), Image.Resampling.BILINEAR), dtype=np.float32) / 255.0
         ph, pw = size - h, size - w
         inp = np.zeros((size, size, 3), dtype=np.float32)
         inp[ph // 2 : ph // 2 + h, pw // 2 : pw // 2 + w] = resized
     else:
-        inp = np.asarray(Image.fromarray(img).resize((size, size), Image.BILINEAR), dtype=np.float32) / 255.0
+        inp = np.asarray(Image.fromarray(img).resize((size, size), Image.Resampling.BILINEAR), dtype=np.float32) / 255.0
 
     inp = (inp - np.array(cfg["mean"], dtype=np.float32)) / np.array(cfg["std"], dtype=np.float32)
     blob = inp.transpose(2, 0, 1)[np.newaxis].astype(np.float32)
@@ -96,7 +96,7 @@ def get_mask(img: np.ndarray, style: str = "anime", size: int | None = None) -> 
         pred = (pred - lo) / (hi - lo + 1e-8)
 
     pred = np.clip(pred, 0.0, 1.0)
-    pred = Image.fromarray((pred * 255).astype(np.uint8)).resize((w0, h0), Image.BILINEAR)
+    pred = Image.fromarray((pred * 255).astype(np.uint8)).resize((w0, h0), Image.Resampling.BILINEAR)
     return np.asarray(pred, dtype=np.float32) / 255.0
 
 

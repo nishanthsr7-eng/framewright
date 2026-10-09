@@ -25,9 +25,7 @@ jobs:
       - name: Ruff format
         run: uv run --only-group dev ruff format --check .
 
-      # Not a gate yet: the code base still has pyright errors to burn down.
-      - name: Pyright (informational)
-        continue-on-error: true
+      - name: Pyright
         run: uv run --group dev --group test pyright
 
   test:

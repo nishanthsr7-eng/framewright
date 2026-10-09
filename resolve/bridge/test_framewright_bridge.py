@@ -163,6 +163,7 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual(report["skipped"], [])
         self.assertEqual(proj.settings["timelineFrameRate"], "24")
         tl = proj.current
+        assert tl is not None
         video = [p for p in tl.placed if p.get("mediaType") == 1]
         self.assertEqual([p["recordFrame"] - 86400 for p in video], [12, 60, 108, 132, 180])
         self.assertEqual((video[0]["startFrame"], video[0]["endFrame"]), (72, 119))
@@ -175,6 +176,7 @@ class BridgeTest(unittest.TestCase):
         # clips already in the pool are reused, and timeline names never collide
         fw.build_from_plan(r, self.plan, base_dir=self.tmp.name, log=lambda *_: None)
         self.assertEqual(sum(len(f.clips) for f in r.pm.project.mp.root.subs), 4)
+        assert proj.current is not None
         self.assertEqual(proj.current.GetName(), "beat_edit_example_2")
 
     def test_missing_file_is_skipped(self):

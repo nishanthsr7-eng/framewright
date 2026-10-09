@@ -3,6 +3,7 @@
 import json
 import os
 import subprocess
+from typing import Any
 
 from framewright_core import output_root as _get_output_root
 
@@ -140,7 +141,7 @@ def write_plan_lua(plan: dict, plan_path: str, base_dir: str | None = None) -> s
     Resolve Free may not find Python, but always runs Lua; paths are made absolute here."""
     base_dir = base_dir or _repo_root()
     absp = lambda p: os.path.abspath(_resolve_path(p, base_dir)).replace("\\", "/")
-    out = dict(plan, source=os.path.abspath(plan_path).replace("\\", "/"))
+    out: dict = dict(plan, source=os.path.abspath(plan_path).replace("\\", "/"))
     out["clips"] = [dict(c, file=absp(c["file"])) for c in plan.get("clips") or []]
     if plan.get("music"):
         out["music"] = dict(plan["music"], file=absp(plan["music"]["file"]))
@@ -169,10 +170,11 @@ def validate_plan(
     errors, warnings = [], []
 
     proj = plan.get("project") or {}
-    fps = proj.get("fps")
+    fps: Any = proj.get("fps")
     if not _num(fps) or fps <= 0:
         errors.append("project.fps must be a positive number")
         fps = 24.0
+    fps = float(fps)
     for key in ("width", "height"):
         if not (isinstance(proj.get(key), int) and proj[key] > 0):
             errors.append(f"project.{key} must be a positive integer")

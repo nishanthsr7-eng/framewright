@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from pydantic import Field
 
 if sys.platform == "win32":
-    sys.stderr.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")  # pyright: ignore[reportAttributeAccessIssue]
 
 
 from framewright_core import run_tool as _run
@@ -58,7 +58,7 @@ def apply_transition(
     video_a: Annotated[str, Field(description="First clip")],
     video_b: Annotated[str, Field(description="Second clip; scaled to match the first")],
     transition: Annotated[
-        Transition,
+        Transition,  # pyright: ignore[reportInvalidTypeForm]
         Field(description="ffmpeg xfade transition, e.g. fade, dissolve, wipeleft, slideup, circleopen, zoomin"),
     ] = "fade",
     duration: Annotated[float, Field(gt=0, le=5, description="Transition length in seconds")] = 0.5,

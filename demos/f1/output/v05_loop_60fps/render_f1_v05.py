@@ -1,5 +1,8 @@
 """F1 demo v5: reference-style edit at 60 fps that loops seamlessly (the last frame flows into the first).
 
+One-off render script for this demo, written by the AI agent during the edit. Reusable logic
+lives in the servers (timeline_project render_plan / prepare_resolve); this file is not imported.
+
   0.000-0.733  hook: fist-pump cut-out (white outline, glow, ghost trails); continues from the end
   0.733-1.700  trophy cut-out over the flickering intro backgrounds (depth blur behind him)
   1.700-2.333  helmet-on cut-out (garage)
