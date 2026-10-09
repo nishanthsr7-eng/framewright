@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest a new tool, effect, or pipeline capability
+about: Suggest a new tool, effect or pipeline capability
 title: ""
 labels: enhancement
 ---
